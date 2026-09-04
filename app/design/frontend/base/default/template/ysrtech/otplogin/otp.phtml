@@ -4,11 +4,9 @@
  *
  * @category  YSRTech
  * @package   YSRTech_OtpLogin
- * @var Mage_Core_Block_Template $this
+ * @var YSRTech_OtpLogin_Block_Form_Otp $this
  */
-$helper = Mage::helper('ysrtech_otplogin');
 ?>
-<?php if ($helper->isEnabled() && !Mage::getSingleton('customer/session')->isLoggedIn()): ?>
 <div id="ysrtech-otp-verify" class="ysrtech-otp-modal" style="display:none;">
     <div class="ysrtech-otp-dialog">
         <button type="button" class="ysrtech-otp-close" data-otp-close="1" aria-label="<?php echo $this->__('Close') ?>">&times;</button>
@@ -18,6 +16,7 @@ $helper = Mage::helper('ysrtech_otplogin');
         <div class="ysrtech-otp-messages"></div>
 
         <form id="ysrtech-otp-verify-form" class="ysrtech-otp-form">
+            <input type="hidden" name="form_key" value="<?php echo $this->getFormKey() ?>"/>
             <div class="ysrtech-otp-field">
                 <label for="ysrtech-otp-code"><?php echo $this->__('One-Time Password') ?></label>
                 <input type="text" id="ysrtech-otp-code" name="otp" required inputmode="numeric"
@@ -25,15 +24,16 @@ $helper = Mage::helper('ysrtech_otplogin');
             </div>
             <div class="ysrtech-otp-actions">
                 <button type="submit" class="button ysrtech-otp-confirm"
-                        data-url="<?php echo $this->getUrl('otplogin/account/otppost', array('_secure' => true)) ?>">
+                        data-loading="<?php echo $this->__('Please wait…') ?>"
+                        data-url="<?php echo $this->getVerifyUrl() ?>">
                     <span><?php echo $this->__('Verify &amp; Continue') ?></span>
                 </button>
                 <a href="#" class="ysrtech-otp-resend"
-                   data-url="<?php echo $this->getUrl('otplogin/account/resendotp', array('_secure' => true)) ?>">
+                   data-form-key="<?php echo $this->getFormKey() ?>"
+                   data-url="<?php echo $this->getResendUrl() ?>">
                     <?php echo $this->__('Resend OTP') ?>
                 </a>
             </div>
         </form>
     </div>
 </div>
-<?php endif; ?>

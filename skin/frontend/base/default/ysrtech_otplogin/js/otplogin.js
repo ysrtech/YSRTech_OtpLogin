@@ -35,8 +35,11 @@
     function showMessage(scope, isError, text) {
         var box = scope.querySelector('.ysrtech-otp-messages');
         if (!box) { return; }
-        box.innerHTML = '<div class="ysrtech-otp-message ' +
-            (isError ? 'error' : 'success') + '">' + text + '</div>';
+        var line = document.createElement('div');
+        line.className = 'ysrtech-otp-message ' + (isError ? 'error' : 'success');
+        line.textContent = text;
+        box.innerHTML = '';
+        box.appendChild(line);
     }
 
     function setLoading(btn, loading) {
@@ -53,13 +56,16 @@
         }
     }
 
-    function postForm(url, form) {
+    function postForm(url, form, extra) {
         var data = new URLSearchParams();
         if (form) {
             $all('input, select, textarea', form).forEach(function (el) {
                 if (!el.name) { return; }
                 data.append(el.name, el.value);
             });
+        }
+        if (extra) {
+            Object.keys(extra).forEach(function (k) { data.append(k, extra[k]); });
         }
         return fetch(url, {
             method: 'POST',
@@ -123,7 +129,8 @@
         var scope = link.closest('.ysrtech-otp-dialog') || document;
         if (!url) { return; }
         clearMessages(scope);
-        postForm(url, null).then(function (res) {
+        // Every endpoint checks the form key, and this one posts no form
+        postForm(url, null, { form_key: link.getAttribute('data-form-key') }).then(function (res) {
             showMessage(scope, res.errors, res.message);
         }).catch(function () {
             showMessage(scope, true, 'An error occurred, please try again later.');
@@ -149,7 +156,6 @@
         document.addEventListener('click', function (e) {
             var t = e.target;
 
-            var closer = t.closest('[data-otp-close], .ysrtech-otp-modal');
             if (t.closest('[data-otp-close]')) { e.preventDefault(); closeAll(); return; }
             // Clicking the dimmed backdrop (the modal element itself) closes it.
             if (t.classList && t.classList.contains('ysrtech-otp-modal')) { closeAll(); return; }

@@ -23,6 +23,7 @@
         <!-- Email OTP tab -->
         <div class="ysrtech-otp-pane" data-otp-pane="otp">
             <form id="ysrtech-otp-email-form" class="ysrtech-otp-form">
+                <input type="hidden" name="form_key" value="<?php echo $this->getFormKey() ?>"/>
                 <div class="ysrtech-otp-field">
                     <label for="ysrtech-otp-email"><?php echo $this->__('Email') ?></label>
                     <input type="email" id="ysrtech-otp-email" name="email" required
@@ -31,6 +32,7 @@
                 </div>
                 <div class="ysrtech-otp-actions">
                     <button type="submit" class="button ysrtech-otp-send"
+                            data-loading="<?php echo $this->__('Please wait…') ?>"
                             data-url="<?php echo $this->getSendOtpUrl() ?>">
                         <span><?php echo $this->__('Send OTP') ?></span>
                     </button>

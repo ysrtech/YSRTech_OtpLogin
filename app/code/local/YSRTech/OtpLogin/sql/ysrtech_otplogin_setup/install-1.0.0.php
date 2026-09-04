@@ -34,6 +34,11 @@ $table = $installer->getConnection()
         'nullable' => false,
         'default'  => '1',
     ), 'Status (1 = active, 0 = used/expired)')
+    ->addColumn('attempts', Varien_Db_Ddl_Table::TYPE_SMALLINT, null, array(
+        'unsigned' => true,
+        'nullable' => false,
+        'default'  => '0',
+    ), 'Wrong codes entered against this OTP')
     ->addColumn('created_at', Varien_Db_Ddl_Table::TYPE_TIMESTAMP, null, array(
         'nullable' => false,
         'default'  => Varien_Db_Ddl_Table::TIMESTAMP_INIT,

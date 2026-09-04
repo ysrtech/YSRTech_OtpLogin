@@ -45,6 +45,30 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
     }
 
     /**
+     * Every action here is an unauthenticated POST that either sends mail or
+     * signs somebody in, so each one is gated the same way: it must be a POST,
+     * the module must be on, and the request must carry this session's form key.
+     *
+     * @return bool Whether the caller may proceed (a refusal is already sent)
+     */
+    protected function _canProceed()
+    {
+        $helper = $this->_helper();
+
+        if (!$this->getRequest()->isPost() || !$helper->isEnabled()) {
+            $this->_json(true, $helper->__('Invalid request.'));
+            return false;
+        }
+
+        if (!$this->_validateFormKey()) {
+            $this->_json(true, $helper->__('Your session has expired. Please reload the page and try again.'));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Look up a customer by email within the current website.
      *
      * @param  string $email
@@ -59,14 +83,46 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
     }
 
     /**
+     * Check what the store will insist on anyway, while a correction is still
+     * cheap. Returns true, or the message to show.
+     *
+     * @param  array $params
+     * @return true|string
+     */
+    protected function _validateRegistration(array $params)
+    {
+        $helper   = $this->_helper();
+        $password = isset($params['password']) ? (string) $params['password'] : '';
+
+        if (trim((string) (isset($params['firstname']) ? $params['firstname'] : '')) === '') {
+            return $helper->__('Please enter your first name.');
+        }
+
+        if (trim((string) (isset($params['lastname']) ? $params['lastname'] : '')) === '') {
+            return $helper->__('Please enter your last name.');
+        }
+
+        /*
+         * Mage_Customer_Model_Customer::validate() lets a short password
+         * through and the resource model then throws on save, so the length is
+         * checked here against the same minimum the resource enforces.
+         */
+        if ($password !== '' && Mage::helper('core/string')->strlen($password) < 7) {
+            return $helper->__('The password must have at least 7 characters.');
+        }
+
+        return true;
+    }
+
+    /**
      * Step 1: validate the email, generate an OTP and email it.
      */
     public function otploginpostAction()
     {
         $helper = $this->_helper();
 
-        if (!$this->getRequest()->isPost() || !$helper->isEnabled()) {
-            return $this->_json(true, $helper->__('Invalid request.'));
+        if (!$this->_canProceed()) {
+            return;
         }
 
         $params = $this->getRequest()->getPost();
@@ -90,6 +146,22 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
 
         if (!$customer->getId() && $isRegister && !$helper->isRegistrationAllowed()) {
             return $this->_json(true, $helper->__('Registration is currently disabled.'));
+        }
+
+        if (!$helper->canSendOtp($email)) {
+            return $this->_json(
+                true,
+                $helper->__('Too many codes have been requested for this address. Please try again later.')
+            );
+        }
+
+        /*
+         * Checked before the code is sent rather than after it is spent: a
+         * password the store will refuse should cost the customer a
+         * correction, not a burnt code and a generic failure.
+         */
+        if ($isRegister && ($error = $this->_validateRegistration($params)) !== true) {
+            return $this->_json(true, $error);
         }
 
         try {
@@ -127,8 +199,8 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
     {
         $helper = $this->_helper();
 
-        if (!$this->getRequest()->isPost() || !$helper->isEnabled()) {
-            return $this->_json(true, $helper->__('Invalid request.'));
+        if (!$this->_canProceed()) {
+            return;
         }
 
         $formData = $this->_customerSession()->getOtpFormData();
@@ -158,7 +230,8 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
                     ->setStore($store)
                     ->setEmail($email)
                     ->setFirstname($formData['firstname'] ? $formData['firstname'] : $email)
-                    ->setLastname($formData['lastname'] ? $formData['lastname'] : '.');
+                    ->setLastname($formData['lastname'] ? $formData['lastname'] : '.')
+                    ->setGroupId(Mage::getStoreConfig(Mage_Customer_Model_Group::XML_PATH_DEFAULT_ID, $store));
 
                 if (!empty($formData['password'])) {
                     $customer->setPassword($formData['password']);
@@ -166,7 +239,12 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
                     $customer->setPassword($customer->generatePassword(12));
                 }
 
+                // The address has just been proved, so there is nothing left
+                // to confirm - and a confirmation the customer never receives
+                // would lock them out of the account they just made.
+                $customer->setConfirmation(null);
                 $customer->save();
+                $helper->sendWelcomeEmail($customer);
 
                 $message = $helper->__('Your account has been created and you are now signed in.');
             } else {
@@ -193,8 +271,8 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
     {
         $helper = $this->_helper();
 
-        if (!$helper->isEnabled()) {
-            return $this->_json(true, $helper->__('Invalid request.'));
+        if (!$this->_canProceed()) {
+            return;
         }
 
         $formData = $this->_customerSession()->getOtpFormData();
@@ -203,6 +281,13 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
         }
 
         $email = $formData['email'];
+
+        if (!$helper->canSendOtp($email)) {
+            return $this->_json(
+                true,
+                $helper->__('Too many codes have been requested for this address. Please try again later.')
+            );
+        }
 
         try {
             $name = trim($formData['firstname'] . ' ' . $formData['lastname']);

@@ -10,7 +10,7 @@
 <config>
     <modules>
         <YSRTech_OtpLogin>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </YSRTech_OtpLogin>
     </modules>
 
@@ -48,6 +48,9 @@
                     <module>YSRTech_OtpLogin</module>
                     <class>Mage_Core_Model_Resource_Setup</class>
                 </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
             </ysrtech_otplogin_setup>
         </resources>
 
@@ -104,6 +107,19 @@
         </translate>
     </adminhtml>
 
+    <crontab>
+        <jobs>
+            <ysrtech_otplogin_clean>
+                <schedule>
+                    <cron_expr>30 3 * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>ysrtech_otplogin/observer::cleanExpiredOtps</model>
+                </run>
+            </ysrtech_otplogin_clean>
+        </jobs>
+    </crontab>
+
     <default>
         <ysrtech_otplogin>
             <general>
@@ -112,6 +128,9 @@
                 <otp_length>6</otp_length>
                 <expire_time>300</expire_time>
                 <allow_registration>1</allow_registration>
+                <max_attempts>5</max_attempts>
+                <max_sends>5</max_sends>
+                <send_window>3600</send_window>
             </general>
             <google>
                 <enabled>0</enabled>

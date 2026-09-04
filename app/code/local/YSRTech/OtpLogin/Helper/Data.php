@@ -18,6 +18,9 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     const XML_PATH_EXPIRE_TIME        = 'ysrtech_otplogin/general/expire_time';
     const XML_PATH_EMAIL_IDENTITY     = 'ysrtech_otplogin/email/identity';
     const XML_PATH_EMAIL_TEMPLATE     = 'ysrtech_otplogin/email/template';
+    const XML_PATH_MAX_ATTEMPTS       = 'ysrtech_otplogin/general/max_attempts';
+    const XML_PATH_MAX_SENDS          = 'ysrtech_otplogin/general/max_sends';
+    const XML_PATH_SEND_WINDOW        = 'ysrtech_otplogin/general/send_window';
 
     /**
      * @return bool
@@ -64,7 +67,73 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * How many wrong codes may be entered against one OTP before it is burnt.
+     *
+     * @return int
+     */
+    public function getMaxAttempts($store = null)
+    {
+        $max = (int) Mage::getStoreConfig(self::XML_PATH_MAX_ATTEMPTS, $store);
+        return $max > 0 ? $max : 5;
+    }
+
+    /**
+     * How many codes may be sent to one address inside the window below.
+     *
+     * @return int
+     */
+    public function getMaxSends($store = null)
+    {
+        $max = (int) Mage::getStoreConfig(self::XML_PATH_MAX_SENDS, $store);
+        return $max > 0 ? $max : 5;
+    }
+
+    /**
+     * Length of the sending window, in seconds.
+     *
+     * @return int
+     */
+    public function getSendWindow($store = null)
+    {
+        $window = (int) Mage::getStoreConfig(self::XML_PATH_SEND_WINDOW, $store);
+        return $window > 0 ? $window : 3600;
+    }
+
+    /**
+     * Whether another code may be sent to this address right now.
+     *
+     * Without this the send endpoint is a mail relay pointed at any address
+     * an attacker names: it is unauthenticated by nature, and every call puts
+     * a message in someone's inbox. The count comes from the OTP table rather
+     * than the session, because a session is the one thing the caller controls.
+     *
+     * @param  string $email
+     * @return bool
+     */
+    public function canSendOtp($email)
+    {
+        /*
+         * gmdate, not Mage::getModel('core/date')->gmtDate($f, $ts): given a
+         * timestamp that helper reads it as store-local and converts it to
+         * GMT, so an already-GMT value comes back shifted by the store's
+         * offset - which on a store behind UTC lands the window in the future
+         * and lets every send through.
+         */
+        $since = gmdate('Y-m-d H:i:s', time() - $this->getSendWindow());
+
+        $count = Mage::getModel('ysrtech_otplogin/otp')->getCollection()
+            ->addFieldToFilter('email', $email)
+            ->addFieldToFilter('created_at', array('gteq' => $since))
+            ->getSize();
+
+        return $count < $this->getMaxSends();
+    }
+
+    /**
      * Generate a fresh OTP code according to the configured type and length.
+     *
+     * random_int, not mt_rand: mt_rand's state can be recovered from a handful
+     * of outputs, and an attacker can ask for as many codes as they like.
      *
      * @return string
      */
@@ -89,7 +158,7 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
         $max  = strlen($pool) - 1;
         $code = '';
         for ($i = 0; $i < $length; $i++) {
-            $code .= $pool[mt_rand(0, $max)];
+            $code .= $pool[random_int(0, $max)];
         }
 
         return $code;
@@ -98,12 +167,21 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     /**
      * Hash an OTP for storage / comparison. We never store the plain code.
      *
+     * Keyed with the installation's crypt key rather than a bare digest: a
+     * six-digit code has a million possible values, so a plain SHA-256 of one
+     * is reversed by a laptop the moment the table leaks. The address is mixed
+     * in as well, so a hash lifted from one row cannot be replayed against
+     * another address.
+     *
      * @param  string $code
+     * @param  string $email
      * @return string
      */
-    public function hashOtp($code)
+    public function hashOtp($code, $email)
     {
-        return hash('sha256', (string) $code);
+        $key = (string) Mage::getConfig()->getNode('global/crypt/key');
+
+        return hash_hmac('sha256', strtolower(trim((string) $email)) . '|' . (string) $code, $key);
     }
 
     /**
@@ -162,8 +240,13 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
         $otp = Mage::getModel('ysrtech_otplogin/otp');
         $otp->setEmail($email)
             ->setName($name)
-            ->setOtp($this->hashOtp($code))
+            ->setOtp($this->hashOtp($code, $email))
             ->setStatus(1)
+            ->setAttempts(0)
+            // Written explicitly rather than left to the column's
+            // CURRENT_TIMESTAMP default, which follows the database server's
+            // time zone. Expiry is measured in PHP, so the two have to agree.
+            ->setCreatedAt(gmdate('Y-m-d H:i:s'))
             ->save();
 
         return $otp;
@@ -192,8 +275,12 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     /**
      * Validate the supplied OTP for the given email.
      *
-     * Checks the latest active record, verifies the hash matches and that the
-     * code has not expired. On success the record is consumed (status = 0).
+     * The lookup is by address, not by hash. Looking the row up by the hash of
+     * what was typed means a wrong guess matches nothing, so there is no row on
+     * which to record that a guess was made - which is how the original left
+     * the codes open to being tried over and over. Here the live code is loaded
+     * first and the guess compared against it, so every miss is counted and the
+     * code is burnt once the allowance runs out.
      *
      * @param  string $code
      * @param  string $email
@@ -208,7 +295,6 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
         /** @var YSRTech_OtpLogin_Model_Resource_Otp_Collection $collection */
         $collection = Mage::getModel('ysrtech_otplogin/otp')->getCollection()
             ->addFieldToFilter('email', $email)
-            ->addFieldToFilter('otp', $this->hashOtp($code))
             ->addFieldToFilter('status', 1)
             ->setOrder('entity_id', 'DESC')
             ->setPageSize(1);
@@ -219,11 +305,21 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
             return false;
         }
 
-        $createdAt = strtotime($otp->getCreatedAt());
-        $expire    = $this->getExpireTime();
-        if ((time() - $createdAt) > $expire) {
+        $createdAt = strtotime($otp->getCreatedAt() . ' UTC');
+        if ((time() - $createdAt) > $this->getExpireTime()) {
             // Expired: burn it so it cannot be retried.
             $otp->setStatus(0)->save();
+            return false;
+        }
+
+        if ((int) $otp->getAttempts() >= $this->getMaxAttempts()) {
+            $otp->setStatus(0)->save();
+            return false;
+        }
+
+        // hash_equals, so a wrong guess takes the same time as a right one
+        if (!hash_equals((string) $otp->getOtp(), $this->hashOtp($code, $email))) {
+            $otp->setAttempts((int) $otp->getAttempts() + 1)->save();
             return false;
         }
 
@@ -231,6 +327,23 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
         $otp->setStatus(0)->save();
 
         return true;
+    }
+
+    /**
+     * Drop OTP rows that are long past use. Called from cron - the table is
+     * written to on every sign-in attempt and nothing else ever clears it.
+     *
+     * @param  int $olderThanSeconds
+     * @return int Rows removed
+     */
+    public function cleanExpiredOtps($olderThanSeconds = 86400)
+    {
+        $resource = Mage::getSingleton('core/resource');
+        $adapter  = $resource->getConnection('core_write');
+        $table    = $resource->getTableName('ysrtech_otplogin/otp');
+        $cutoff   = gmdate('Y-m-d H:i:s', time() - (int) $olderThanSeconds);
+
+        return (int) $adapter->delete($table, array('created_at < ?' => $cutoff));
     }
 
     /* ------------------------------------------------------------------ *
@@ -393,9 +506,32 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
             ->setEmail($email)
             ->setFirstname($firstname ? $firstname : $email)
             ->setLastname($lastname ? $lastname : '.')
+            ->setGroupId(Mage::getStoreConfig(Mage_Customer_Model_Group::XML_PATH_DEFAULT_ID, $store))
             ->setPassword($customer->generatePassword(12));
+
+        // The address has just been proved, so there is nothing left to confirm
+        $customer->setConfirmation(null);
         $customer->save();
+        $this->sendWelcomeEmail($customer);
 
         return $customer;
+    }
+
+    /**
+     * Send the store's usual new-account email, without letting a mail problem
+     * cost the customer the account they just created.
+     *
+     * @param  Mage_Customer_Model_Customer $customer
+     * @return $this
+     */
+    public function sendWelcomeEmail(Mage_Customer_Model_Customer $customer)
+    {
+        try {
+            $customer->sendNewAccountEmail('registered', '', $customer->getStoreId());
+        } catch (Exception $e) {
+            Mage::logException($e);
+        }
+
+        return $this;
     }
 }

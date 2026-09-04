@@ -30,14 +30,29 @@ body.ysrtech-otp-open {
     box-sizing: border-box;
 }
 
+/* Sized explicitly, and every box property a theme is likely to put on its
+   buttons reset with it. Left to inherit, a theme that styles button{width:100%}
+   stretches this across the whole dialog - it is absolutely positioned, so it
+   then sits on top of the title rather than in the corner. */
 .ysrtech-otp-close {
     position: absolute;
-    top: 10px;
-    right: 12px;
+    top: 6px;
+    right: 8px;
+    width: 32px;
+    min-width: 0;
+    max-width: none;
+    height: 32px;
+    padding: 0;
+    margin: 0;
     border: 0;
+    border-radius: 4px;
     background: transparent;
-    font-size: 26px;
-    line-height: 1;
+    box-shadow: none;
+    font-size: 24px;
+    font-weight: normal;
+    line-height: 32px;
+    text-align: center;
+    text-transform: none;
     cursor: pointer;
     color: #888;
 }

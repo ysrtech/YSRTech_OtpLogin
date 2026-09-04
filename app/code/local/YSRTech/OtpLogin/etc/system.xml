@@ -76,6 +76,33 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </expire_time>
+                        <max_attempts translate="label comment">
+                            <label>Maximum Verification Attempts</label>
+                            <frontend_type>text</frontend_type>
+                            <comment>How many wrong codes may be entered before the code is discarded and a new one has to be requested. Without a limit, a short numeric code can simply be guessed.</comment>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </max_attempts>
+                        <max_sends translate="label comment">
+                            <label>Maximum Codes Per Address</label>
+                            <frontend_type>text</frontend_type>
+                            <comment>How many codes may be sent to one email address inside the window below. This endpoint is open to anyone, so the limit is what stops it being used to flood a stranger's inbox.</comment>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </max_sends>
+                        <send_window translate="label comment">
+                            <label>Sending Window</label>
+                            <frontend_type>text</frontend_type>
+                            <comment>The period the limit above is measured over, in seconds.</comment>
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </send_window>
                     </fields>
                 </general>
                 <google translate="label" module="ysrtech_otplogin">

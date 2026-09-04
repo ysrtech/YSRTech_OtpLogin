@@ -32,7 +32,7 @@
             <block type="ysrtech_otplogin/form_register"
                    name="ysrtech.otplogin.register"
                    template="ysrtech/otplogin/register.phtml"/>
-            <block type="core/template"
+            <block type="ysrtech_otplogin/form_otp"
                    name="ysrtech.otplogin.otp"
                    template="ysrtech/otplogin/otp.phtml"/>
         </reference>

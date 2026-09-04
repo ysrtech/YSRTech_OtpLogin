@@ -44,8 +44,10 @@ class YSRTech_OtpLogin_GoogleController extends Mage_Core_Controller_Front_Actio
             return $this->_redirect('customer/account');
         }
 
-        // CSRF state token, remembered for the callback.
-        $state = md5(uniqid('', true) . mt_rand());
+        // CSRF state token, remembered for the callback. From the CSPRNG:
+        // uniqid() is the clock and mt_rand() is predictable from its own
+        // output, so together they are guessable by anyone who can time a page.
+        $state = bin2hex(random_bytes(16));
         $this->_customerSession()->setGoogleOauthState($state);
 
         $this->getResponse()->setRedirect($helper->getGoogleAuthUrl($state));

@@ -16,6 +16,7 @@
         <div class="ysrtech-otp-messages"></div>
 
         <form id="ysrtech-otp-register-form" class="ysrtech-otp-form">
+            <input type="hidden" name="form_key" value="<?php echo $this->getFormKey() ?>"/>
             <div class="ysrtech-otp-field">
                 <label for="ysrtech-reg-firstname"><?php echo $this->__('First Name') ?></label>
                 <input type="text" id="ysrtech-reg-firstname" name="firstname" required
@@ -33,11 +34,12 @@
             </div>
             <div class="ysrtech-otp-field">
                 <label for="ysrtech-reg-password"><?php echo $this->__('Password') ?></label>
-                <input type="password" id="ysrtech-reg-password" name="password" required minlength="6"
+                <input type="password" id="ysrtech-reg-password" name="password" required minlength="7"
                        placeholder="<?php echo $this->__('Password') ?>" autocomplete="new-password" class="input-text"/>
             </div>
             <div class="ysrtech-otp-actions">
                 <button type="submit" class="button ysrtech-otp-send"
+                        data-loading="<?php echo $this->__('Please wait…') ?>"
                         data-url="<?php echo $this->getSendOtpUrl() ?>">
                     <span><?php echo $this->__('Create an Account') ?></span>
                 </button>

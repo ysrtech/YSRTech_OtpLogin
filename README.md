@@ -39,6 +39,8 @@ delivered by a standard transactional email.
    (the install script creating the `ysrtech_email_otp` table runs automatically
    on the next request).
 3. Configure under **System → Configuration → YSRTech → Email OTP Login**.
+4. Make sure Magento's cron is running: a nightly job clears out spent codes,
+   and without it the OTP table grows for the life of the store.
 
 ## Configuration
 
@@ -51,6 +53,9 @@ delivered by a standard transactional email.
 | OTP Type | Numeric / Alphabetic / Alphanumeric. |
 | OTP Length | Number of characters in the code. |
 | Expiry Time | Seconds the code stays valid. |
+| Maximum Verification Attempts | Wrong codes allowed before the code is discarded (default 5). |
+| Maximum Codes Per Address | Codes that may be sent to one address per window (default 5). |
+| Sending Window | The period that limit is measured over, in seconds (default 3600). |
 | Email Sender | Which store email identity sends the OTP. |
 | Email Template | The transactional template used (defaults to the bundled one). |
 
@@ -64,6 +69,37 @@ delivered by a standard transactional email.
    - `otplogin/account/otppost` checks the hash + expiry, then logs them in or
      creates the account.
 4. `otplogin/account/resendotp` issues a fresh code if needed.
+
+## Security notes
+
+- **Codes are generated with `random_int()`** and stored as an HMAC-SHA256
+  keyed with the installation's crypt key and bound to the address. A bare
+  digest of a six-digit code is reversed instantly from a table dump; a keyed
+  one is not, and a hash lifted from one row cannot be replayed against another
+  address.
+- **Every endpoint requires the session's form key.** They are unauthenticated
+  by nature — one sends mail, one signs a visitor in — so without it any page
+  on the internet could drive them on a visitor's behalf.
+- **Wrong codes are counted.** After *Maximum Verification Attempts* the code is
+  discarded and a new one has to be requested. Without that cap a six-digit code
+  is simply guessed.
+- **Sends are capped per address.** The send endpoint puts a message in whatever
+  inbox the caller names, so the limit is what stops it being pointed at a
+  stranger.
+- **Codes are timed in UTC.** The row's `created_at` is written explicitly
+  rather than left to the column default, so expiry does not depend on the
+  database server's time zone matching PHP's.
+- **The address is proved before the account exists**, so accounts created this
+  way are saved with no confirmation pending — a confirmation email the customer
+  never asked for would otherwise lock them out of the account they just made.
+- **Whether an address is registered is disclosed** by design: the sign-in tab
+  says so, because a customer who mistyped their address needs to know. If you
+  would rather not disclose it, make `otploginpost` answer "an OTP has been
+  sent" either way and let the verification step fail.
+- **Watch what else logs your outgoing mail.** Modules that keep a copy of every
+  message — Mailgun's tracking table, for instance — store the rendered email,
+  and the code is in it in plain text. Hashing the code in this module's own
+  table does not help if another table holds the email body.
 
 ## Theme note
 
