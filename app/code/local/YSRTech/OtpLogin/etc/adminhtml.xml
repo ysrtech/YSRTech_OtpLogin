@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * YSRTech OtpLogin
+ *
+ * @category  YSRTech
+ * @package   YSRTech_OtpLogin
+ */
+-->
+<config>
+    <adminhtml>
+        <acl>
+            <resources>
+                <admin>
+                    <children>
+                        <system>
+                            <children>
+                                <config>
+                                    <children>
+                                        <ysrtech_otplogin translate="title" module="ysrtech_otplogin">
+                                            <title>Email OTP Login</title>
+                                        </ysrtech_otplogin>
+                                    </children>
+                                </config>
+                            </children>
+                        </system>
+                    </children>
+                </admin>
+            </resources>
+        </acl>
+    </adminhtml>
+</config>

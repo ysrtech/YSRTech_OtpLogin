@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * YSRTech OtpLogin
+ *
+ * @category  YSRTech
+ * @package   YSRTech_OtpLogin
+ */
+-->
+<layout version="0.1.0">
+    <default>
+        <reference name="head">
+            <action method="addItem">
+                <type>skin_css</type>
+                <name>ysrtech_otplogin/css/otplogin.css</name>
+            </action>
+            <action method="addItem">
+                <type>skin_js</type>
+                <name>ysrtech_otplogin/js/otplogin.js</name>
+            </action>
+        </reference>
+
+        <!--
+            "before_body_end" exists in the OpenMage RWD theme. If your theme
+            does not output it, change the reference below to "content" (the
+            popups stay hidden until opened, so placement is cosmetic only).
+        -->
+        <reference name="before_body_end">
+            <block type="ysrtech_otplogin/form_login"
+                   name="ysrtech.otplogin.login"
+                   template="ysrtech/otplogin/login.phtml"/>
+            <block type="ysrtech_otplogin/form_register"
+                   name="ysrtech.otplogin.register"
+                   template="ysrtech/otplogin/register.phtml"/>
+            <block type="core/template"
+                   name="ysrtech.otplogin.otp"
+                   template="ysrtech/otplogin/otp.phtml"/>
+        </reference>
+    </default>
+</layout>

@@ -1,0 +1,39 @@
+<?php
+/**
+ * YSRTech OtpLogin - OTP verification popup.
+ *
+ * @category  YSRTech
+ * @package   YSRTech_OtpLogin
+ * @var Mage_Core_Block_Template $this
+ */
+$helper = Mage::helper('ysrtech_otplogin');
+?>
+<?php if ($helper->isEnabled() && !Mage::getSingleton('customer/session')->isLoggedIn()): ?>
+<div id="ysrtech-otp-verify" class="ysrtech-otp-modal" style="display:none;">
+    <div class="ysrtech-otp-dialog">
+        <button type="button" class="ysrtech-otp-close" data-otp-close="1" aria-label="<?php echo $this->__('Close') ?>">&times;</button>
+        <h2 class="ysrtech-otp-title"><?php echo $this->__('Enter OTP') ?></h2>
+        <p class="ysrtech-otp-hint"><?php echo $this->__('We have emailed you a one-time password. Please enter it below.') ?></p>
+
+        <div class="ysrtech-otp-messages"></div>
+
+        <form id="ysrtech-otp-verify-form" class="ysrtech-otp-form">
+            <div class="ysrtech-otp-field">
+                <label for="ysrtech-otp-code"><?php echo $this->__('One-Time Password') ?></label>
+                <input type="text" id="ysrtech-otp-code" name="otp" required inputmode="numeric"
+                       autocomplete="one-time-code" placeholder="<?php echo $this->__('Enter OTP') ?>" class="input-text"/>
+            </div>
+            <div class="ysrtech-otp-actions">
+                <button type="submit" class="button ysrtech-otp-confirm"
+                        data-url="<?php echo $this->getUrl('otplogin/account/otppost', array('_secure' => true)) ?>">
+                    <span><?php echo $this->__('Verify &amp; Continue') ?></span>
+                </button>
+                <a href="#" class="ysrtech-otp-resend"
+                   data-url="<?php echo $this->getUrl('otplogin/account/resendotp', array('_secure' => true)) ?>">
+                    <?php echo $this->__('Resend OTP') ?>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>

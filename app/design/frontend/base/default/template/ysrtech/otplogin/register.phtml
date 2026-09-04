@@ -1,0 +1,61 @@
+<?php
+/**
+ * YSRTech OtpLogin - registration popup.
+ *
+ * @category  YSRTech
+ * @package   YSRTech_OtpLogin
+ * @var YSRTech_OtpLogin_Block_Form_Register $this
+ */
+?>
+<?php if (!$this->customerIsAlreadyLoggedIn() && $this->isRegistrationAllowed()): ?>
+<div id="ysrtech-otp-register" class="ysrtech-otp-modal" style="display:none;">
+    <div class="ysrtech-otp-dialog">
+        <button type="button" class="ysrtech-otp-close" data-otp-close="1" aria-label="<?php echo $this->__('Close') ?>">&times;</button>
+        <h2 class="ysrtech-otp-title"><?php echo $this->__('Create an Account') ?></h2>
+
+        <div class="ysrtech-otp-messages"></div>
+
+        <form id="ysrtech-otp-register-form" class="ysrtech-otp-form">
+            <div class="ysrtech-otp-field">
+                <label for="ysrtech-reg-firstname"><?php echo $this->__('First Name') ?></label>
+                <input type="text" id="ysrtech-reg-firstname" name="firstname" required
+                       placeholder="<?php echo $this->__('First Name') ?>" class="input-text"/>
+            </div>
+            <div class="ysrtech-otp-field">
+                <label for="ysrtech-reg-lastname"><?php echo $this->__('Last Name') ?></label>
+                <input type="text" id="ysrtech-reg-lastname" name="lastname" required
+                       placeholder="<?php echo $this->__('Last Name') ?>" class="input-text"/>
+            </div>
+            <div class="ysrtech-otp-field">
+                <label for="ysrtech-reg-email"><?php echo $this->__('Email') ?></label>
+                <input type="email" id="ysrtech-reg-email" name="email" required
+                       placeholder="<?php echo $this->__('Email') ?>" autocomplete="email" class="input-text"/>
+            </div>
+            <div class="ysrtech-otp-field">
+                <label for="ysrtech-reg-password"><?php echo $this->__('Password') ?></label>
+                <input type="password" id="ysrtech-reg-password" name="password" required minlength="6"
+                       placeholder="<?php echo $this->__('Password') ?>" autocomplete="new-password" class="input-text"/>
+            </div>
+            <div class="ysrtech-otp-actions">
+                <button type="submit" class="button ysrtech-otp-send"
+                        data-url="<?php echo $this->getSendOtpUrl() ?>">
+                    <span><?php echo $this->__('Create an Account') ?></span>
+                </button>
+            </div>
+        </form>
+
+        <?php if (Mage::helper('ysrtech_otplogin')->isGoogleEnabled()): ?>
+            <div class="ysrtech-otp-or"><span><?php echo $this->__('or') ?></span></div>
+            <a class="ysrtech-otp-google" href="<?php echo $this->getUrl('otplogin/google/connect', array('_secure' => true)) ?>">
+                <span class="ysrtech-otp-google-icon" aria-hidden="true"></span>
+                <span><?php echo $this->__('Sign up with Google') ?></span>
+            </a>
+        <?php endif; ?>
+
+        <div class="ysrtech-otp-foot">
+            <?php echo $this->__('Already have an account?') ?>
+            <a href="#" data-otp-open="login"><?php echo $this->__('Sign in') ?></a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>

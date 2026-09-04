@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * YSRTech OtpLogin
+ *
+ * @category  YSRTech
+ * @package   YSRTech_OtpLogin
+ */
+-->
+<config>
+    <modules>
+        <YSRTech_OtpLogin>
+            <version>1.0.0</version>
+        </YSRTech_OtpLogin>
+    </modules>
+
+    <global>
+        <models>
+            <ysrtech_otplogin>
+                <class>YSRTech_OtpLogin_Model</class>
+                <resourceModel>ysrtech_otplogin_resource</resourceModel>
+            </ysrtech_otplogin>
+            <ysrtech_otplogin_resource>
+                <class>YSRTech_OtpLogin_Model_Resource</class>
+                <entities>
+                    <otp>
+                        <table>ysrtech_email_otp</table>
+                    </otp>
+                </entities>
+            </ysrtech_otplogin_resource>
+        </models>
+
+        <blocks>
+            <ysrtech_otplogin>
+                <class>YSRTech_OtpLogin_Block</class>
+            </ysrtech_otplogin>
+        </blocks>
+
+        <helpers>
+            <ysrtech_otplogin>
+                <class>YSRTech_OtpLogin_Helper</class>
+            </ysrtech_otplogin>
+        </helpers>
+
+        <resources>
+            <ysrtech_otplogin_setup>
+                <setup>
+                    <module>YSRTech_OtpLogin</module>
+                    <class>Mage_Core_Model_Resource_Setup</class>
+                </setup>
+            </ysrtech_otplogin_setup>
+        </resources>
+
+        <template>
+            <email>
+                <ysrtech_otplogin_email_template translate="label" module="ysrtech_otplogin">
+                    <label>OTP Login - One Time Password</label>
+                    <file>ysrtech_otplogin_otp.html</file>
+                    <type>html</type>
+                </ysrtech_otplogin_email_template>
+            </email>
+        </template>
+    </global>
+
+    <frontend>
+        <routers>
+            <ysrtech_otplogin>
+                <use>standard</use>
+                <args>
+                    <module>YSRTech_OtpLogin</module>
+                    <frontName>otplogin</frontName>
+                </args>
+            </ysrtech_otplogin>
+        </routers>
+
+        <layout>
+            <updates>
+                <ysrtech_otplogin>
+                    <file>ysrtech_otplogin.xml</file>
+                </ysrtech_otplogin>
+            </updates>
+        </layout>
+
+        <translate>
+            <modules>
+                <YSRTech_OtpLogin>
+                    <files>
+                        <default>YSRTech_OtpLogin.csv</default>
+                    </files>
+                </YSRTech_OtpLogin>
+            </modules>
+        </translate>
+    </frontend>
+
+    <adminhtml>
+        <translate>
+            <modules>
+                <YSRTech_OtpLogin>
+                    <files>
+                        <default>YSRTech_OtpLogin.csv</default>
+                    </files>
+                </YSRTech_OtpLogin>
+            </modules>
+        </translate>
+    </adminhtml>
+
+    <default>
+        <ysrtech_otplogin>
+            <general>
+                <enabled>1</enabled>
+                <otp_type>number</otp_type>
+                <otp_length>6</otp_length>
+                <expire_time>300</expire_time>
+                <allow_registration>1</allow_registration>
+            </general>
+            <google>
+                <enabled>0</enabled>
+            </google>
+            <email>
+                <identity>general</identity>
+                <template>ysrtech_otplogin_email_template</template>
+            </email>
+        </ysrtech_otplogin>
+    </default>
+</config>

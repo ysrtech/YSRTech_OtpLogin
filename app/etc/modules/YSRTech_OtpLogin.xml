@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * YSRTech OtpLogin
+ *
+ * Email based OTP login & registration for OpenMage / Magento 1.
+ *
+ * @category  YSRTech
+ * @package   YSRTech_OtpLogin
+ */
+-->
+<config>
+    <modules>
+        <YSRTech_OtpLogin>
+            <active>true</active>
+            <codePool>local</codePool>
+            <depends>
+                <Mage_Customer/>
+            </depends>
+        </YSRTech_OtpLogin>
+    </modules>
+</config>

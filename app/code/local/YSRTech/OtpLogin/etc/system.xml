@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * YSRTech OtpLogin
+ *
+ * @category  YSRTech
+ * @package   YSRTech_OtpLogin
+ */
+-->
+<config>
+    <tabs>
+        <ysrtech translate="label" module="ysrtech_otplogin">
+            <label>YSRTech</label>
+            <sort_order>200</sort_order>
+        </ysrtech>
+    </tabs>
+    <sections>
+        <ysrtech_otplogin translate="label" module="ysrtech_otplogin">
+            <label>Email OTP Login</label>
+            <tab>ysrtech</tab>
+            <sort_order>10</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <general translate="label" module="ysrtech_otplogin">
+                    <label>General Configuration</label>
+                    <sort_order>10</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <enabled translate="label">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </enabled>
+                        <allow_registration translate="label comment">
+                            <label>Allow Registration via OTP</label>
+                            <comment>If enabled, unknown email addresses can create an account by verifying an OTP.</comment>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>15</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </allow_registration>
+                        <otp_type translate="label">
+                            <label>OTP Type</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>ysrtech_otplogin/source_otptype</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </otp_type>
+                        <otp_length translate="label comment">
+                            <label>OTP Length</label>
+                            <frontend_type>text</frontend_type>
+                            <comment>Number of characters in the generated code.</comment>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </otp_length>
+                        <expire_time translate="label comment">
+                            <label>Expiry Time</label>
+                            <frontend_type>text</frontend_type>
+                            <comment>How long an OTP stays valid, in seconds.</comment>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </expire_time>
+                    </fields>
+                </general>
+                <google translate="label" module="ysrtech_otplogin">
+                    <label>Google Sign-In</label>
+                    <sort_order>15</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <enabled translate="label">
+                            <label>Enable Google Sign-In</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </enabled>
+                        <client_id translate="label comment">
+                            <label>Client ID</label>
+                            <frontend_type>text</frontend_type>
+                            <comment>OAuth 2.0 Client ID from your Google Cloud project.</comment>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </client_id>
+                        <client_secret translate="label comment">
+                            <label>Client Secret</label>
+                            <frontend_type>obscure</frontend_type>
+                            <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                            <comment>OAuth 2.0 Client Secret. Stored encrypted.</comment>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </client_secret>
+                        <redirect_note translate="label comment">
+                            <label>Authorized Redirect URI</label>
+                            <frontend_type>label</frontend_type>
+                            <comment><![CDATA[Add this exact URL to your Google OAuth client's "Authorized redirect URIs":<br/><strong>https://&lt;your-domain&gt;/otplogin/google/callback</strong>]]></comment>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </redirect_note>
+                    </fields>
+                </google>
+                <email translate="label" module="ysrtech_otplogin">
+                    <label>Email Configuration</label>
+                    <sort_order>20</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <identity translate="label">
+                            <label>Email Sender</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_email_identity</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </identity>
+                        <template translate="label">
+                            <label>Email Template</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_email_template</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </template>
+                    </fields>
+                </email>
+            </groups>
+        </ysrtech_otplogin>
+    </sections>
+</config>
