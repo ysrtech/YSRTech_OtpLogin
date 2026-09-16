@@ -1,40 +1,25 @@
-<!--@subject Your One-Time Password (OTP) @-->
+<!--@subject Your sign-in code for {{var store_name}} @-->
 <!--@vars
-{"var otp":"OTP code","var name":"Recipient name","var store_name":"Store name","var expire_minutes":"Minutes until expiry"}
+{"var otp":"Sign-in code","var name":"Recipient name","var store_name":"Store name","var expire_minutes":"Minutes until expiry"}
 @-->
-<body style="margin:0; padding:0; background:#f6f6f6; font-family:Arial, Helvetica, sans-serif; color:#333;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f6f6; padding:24px 0;">
-        <tr>
-            <td align="center">
-                <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #ececec;">
-                    <tr>
-                        <td style="background:#1979c3; padding:20px 30px; color:#ffffff; font-size:20px; font-weight:bold;">
-                            {{var store_name}}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding:30px;">
-                            <p style="margin:0 0 16px; font-size:15px;">{{depend name}}Hi {{var name}},{{/depend}}</p>
-                            <p style="margin:0 0 20px; font-size:15px; line-height:1.5;">
-                                Use the one-time password below to continue signing in to your account.
-                            </p>
-                            <div style="text-align:center; margin:24px 0;">
-                                <span style="display:inline-block; font-size:30px; letter-spacing:8px; font-weight:bold; color:#1979c3; background:#f0f7fc; border:1px dashed #1979c3; border-radius:6px; padding:14px 26px;">
-                                    {{var otp}}
-                                </span>
-                            </div>
-                            <p style="margin:0 0 16px; font-size:14px; color:#666; line-height:1.5;">
-                                This code expires in {{var expire_minutes}} minute(s). If you did not request it, you can safely ignore this email.
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding:18px 30px; background:#fafafa; border-top:1px solid #ececec; font-size:12px; color:#999;">
-                            &copy; {{var store_name}}
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
+
+<!--@styles
+@-->
+
+{{template config_path="design/email/header"}}
+{{inlinecss file="email-inline.css"}}
+
+<table cellpadding="0" cellspacing="0" border="0">
+    <tr>
+        <td class="action-content">
+            {{depend name}}<p>Hi {{var name}},</p>{{/depend}}
+            <p>Use the code below to sign in to your account.</p>
+            <p style="text-align:center; margin:28px 0;">
+                <span style="display:inline-block; font-size:30px; letter-spacing:8px; font-weight:bold; border:1px dashed #c76f5c; border-radius:6px; padding:14px 26px; color:#231f20;">{{var otp}}</span>
+            </p>
+            <p>This code expires in {{var expire_minutes}} minute(s). If you did not request it, you can safely ignore this email.</p>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer"}}

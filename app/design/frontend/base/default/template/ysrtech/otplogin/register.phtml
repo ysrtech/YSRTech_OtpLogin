@@ -1,6 +1,6 @@
 <?php
 /**
- * YSRTech OtpLogin - registration popup.
+ * YSRTech OtpLogin - registration popup (passwordless, email code only).
  *
  * @category  YSRTech
  * @package   YSRTech_OtpLogin
@@ -12,10 +12,11 @@
     <div class="ysrtech-otp-dialog">
         <button type="button" class="ysrtech-otp-close" data-otp-close="1" aria-label="<?php echo $this->__('Close') ?>">&times;</button>
         <h2 class="ysrtech-otp-title"><?php echo $this->__('Create an Account') ?></h2>
+        <p class="ysrtech-otp-hint"><?php echo $this->__('Enter your details and we will email you a code to confirm your account. No password needed.') ?></p>
 
         <div class="ysrtech-otp-messages"></div>
 
-        <form id="ysrtech-otp-register-form" class="ysrtech-otp-form">
+        <form id="ysrtech-otp-register-form" class="ysrtech-otp-form ysrtech-otp-sendform">
             <div class="ysrtech-otp-field">
                 <label for="ysrtech-reg-firstname"><?php echo $this->__('First Name') ?></label>
                 <input type="text" id="ysrtech-reg-firstname" name="firstname" required
@@ -27,17 +28,13 @@
                        placeholder="<?php echo $this->__('Last Name') ?>" class="input-text"/>
             </div>
             <div class="ysrtech-otp-field">
-                <label for="ysrtech-reg-email"><?php echo $this->__('Email') ?></label>
+                <label for="ysrtech-reg-email"><?php echo $this->__('Email address') ?></label>
                 <input type="email" id="ysrtech-reg-email" name="email" required
-                       placeholder="<?php echo $this->__('Email') ?>" autocomplete="email" class="input-text"/>
-            </div>
-            <div class="ysrtech-otp-field">
-                <label for="ysrtech-reg-password"><?php echo $this->__('Password') ?></label>
-                <input type="password" id="ysrtech-reg-password" name="password" required minlength="6"
-                       placeholder="<?php echo $this->__('Password') ?>" autocomplete="new-password" class="input-text"/>
+                       placeholder="<?php echo $this->__('Email address') ?>" autocomplete="email" class="input-text"/>
             </div>
             <div class="ysrtech-otp-actions">
                 <button type="submit" class="button ysrtech-otp-send"
+                        data-loading="<?php echo $this->__('Sending…') ?>"
                         data-url="<?php echo $this->getSendOtpUrl() ?>">
                     <span><?php echo $this->__('Create an Account') ?></span>
                 </button>

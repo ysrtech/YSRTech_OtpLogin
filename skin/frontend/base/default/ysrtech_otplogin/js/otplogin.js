@@ -27,6 +27,10 @@
         if (firstInput) { try { firstInput.focus(); } catch (e) {} }
     }
 
+    // Public hook so other checkout scripts (e.g. OneStepCheckout's "login now"
+    // links) can open the passwordless popup instead of a password form.
+    window.YsrtechOtp = { open: open, close: closeAll };
+
     function clearMessages(scope) {
         var box = scope.querySelector('.ysrtech-otp-messages');
         if (box) { box.innerHTML = ''; }
@@ -72,11 +76,17 @@
         }).then(function (r) { return r.json(); });
     }
 
-    // ---- Send OTP (login-by-email and registration both land here) ----
+    // Where messages for a form should be shown: its popup dialog, its inline
+    // wrapper on the login page, or the document as a last resort.
+    function scopeOf(form) {
+        return form.closest('.ysrtech-otp-dialog') || form.closest('.ysrtech-otp-inline') || document;
+    }
+
+    // ---- Send code (email sign-in and registration both land here) ----
     function handleSendOtp(form) {
         var btn = form.querySelector('.ysrtech-otp-send');
         var url = btn ? btn.getAttribute('data-url') : null;
-        var scope = form.closest('.ysrtech-otp-dialog') || document;
+        var scope = scopeOf(form);
         if (!url) { return; }
         clearMessages(scope);
         setLoading(btn, true);
@@ -131,7 +141,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        if (!modalById('ysrtech-otp-login') && !modalById('ysrtech-otp-register')) {
+        // The verify popup is what every entry point funnels into, so bind as long
+        // as it (or an inline sign-in form on the login page) is on the page.
+        if (!modalById('ysrtech-otp-verify') && !$('.ysrtech-otp-sendform')) {
             return;
         }
 
@@ -183,19 +195,14 @@
             if (e.key === 'Escape') { closeAll(); }
         });
 
-        // Form submissions.
-        var emailForm = modalById('ysrtech-otp-email-form');
-        if (emailForm) {
-            emailForm.addEventListener('submit', function (e) { e.preventDefault(); handleSendOtp(emailForm); });
-        }
-        var regForm = modalById('ysrtech-otp-register-form');
-        if (regForm) {
-            regForm.addEventListener('submit', function (e) { e.preventDefault(); handleSendOtp(regForm); });
-        }
+        // Every "email me a code" form - the popup, the registration popup, and the
+        // inline form on the login page - is bound the same way by class.
+        $all('form.ysrtech-otp-sendform').forEach(function (form) {
+            form.addEventListener('submit', function (e) { e.preventDefault(); handleSendOtp(form); });
+        });
         var verifyForm = modalById('ysrtech-otp-verify-form');
         if (verifyForm) {
             verifyForm.addEventListener('submit', function (e) { e.preventDefault(); handleVerify(verifyForm); });
         }
-        // The password tab posts normally to customer/account/loginPost.
     });
 })();

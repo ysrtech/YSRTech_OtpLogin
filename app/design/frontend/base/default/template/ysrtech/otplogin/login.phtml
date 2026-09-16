@@ -1,6 +1,6 @@
 <?php
 /**
- * YSRTech OtpLogin - login popup.
+ * YSRTech OtpLogin - sign-in popup (passwordless, email code only).
  *
  * @category  YSRTech
  * @package   YSRTech_OtpLogin
@@ -12,52 +12,25 @@
     <div class="ysrtech-otp-dialog">
         <button type="button" class="ysrtech-otp-close" data-otp-close="1" aria-label="<?php echo $this->__('Close') ?>">&times;</button>
         <h2 class="ysrtech-otp-title"><?php echo $this->__('Sign In') ?></h2>
-
-        <div class="ysrtech-otp-tabs">
-            <button type="button" class="ysrtech-otp-tab active" data-otp-tab="otp"><?php echo $this->__('Sign in with OTP') ?></button>
-            <button type="button" class="ysrtech-otp-tab" data-otp-tab="password"><?php echo $this->__('Sign in with Password') ?></button>
-        </div>
+        <p class="ysrtech-otp-hint"><?php echo $this->__('Enter your email address and we will send you a code to sign in.') ?></p>
 
         <div class="ysrtech-otp-messages"></div>
 
-        <!-- Email OTP tab -->
-        <div class="ysrtech-otp-pane" data-otp-pane="otp">
-            <form id="ysrtech-otp-email-form" class="ysrtech-otp-form">
-                <div class="ysrtech-otp-field">
-                    <label for="ysrtech-otp-email"><?php echo $this->__('Email') ?></label>
-                    <input type="email" id="ysrtech-otp-email" name="email" required
-                           placeholder="<?php echo $this->__('Email') ?>"
-                           autocomplete="email" class="input-text"/>
-                </div>
-                <div class="ysrtech-otp-actions">
-                    <button type="submit" class="button ysrtech-otp-send"
-                            data-url="<?php echo $this->getSendOtpUrl() ?>">
-                        <span><?php echo $this->__('Send OTP') ?></span>
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Standard password tab -->
-        <div class="ysrtech-otp-pane" data-otp-pane="password" style="display:none;">
-            <form id="ysrtech-otp-password-form" class="ysrtech-otp-form"
-                  action="<?php echo $this->getPostActionUrl() ?>" method="post">
-                <input type="hidden" name="form_key" value="<?php echo $this->getFormKey() ?>"/>
-                <div class="ysrtech-otp-field">
-                    <label for="ysrtech-otp-login-email"><?php echo $this->__('Email') ?></label>
-                    <input type="email" id="ysrtech-otp-login-email" name="login[username]" required
-                           placeholder="<?php echo $this->__('Email') ?>" autocomplete="email" class="input-text"/>
-                </div>
-                <div class="ysrtech-otp-field">
-                    <label for="ysrtech-otp-login-pass"><?php echo $this->__('Password') ?></label>
-                    <input type="password" id="ysrtech-otp-login-pass" name="login[password]" required
-                           placeholder="<?php echo $this->__('Password') ?>" autocomplete="current-password" class="input-text"/>
-                </div>
-                <div class="ysrtech-otp-actions">
-                    <button type="submit" class="button"><span><?php echo $this->__('Sign In') ?></span></button>
-                </div>
-            </form>
-        </div>
+        <form id="ysrtech-otp-email-form" class="ysrtech-otp-form ysrtech-otp-sendform">
+            <div class="ysrtech-otp-field">
+                <label for="ysrtech-otp-email"><?php echo $this->__('Email address') ?></label>
+                <input type="email" id="ysrtech-otp-email" name="email" required
+                       placeholder="<?php echo $this->__('Email address') ?>"
+                       autocomplete="email" class="input-text"/>
+            </div>
+            <div class="ysrtech-otp-actions">
+                <button type="submit" class="button ysrtech-otp-send"
+                        data-loading="<?php echo $this->__('Sending…') ?>"
+                        data-url="<?php echo $this->getSendOtpUrl() ?>">
+                    <span><?php echo $this->__('Email me a sign-in code') ?></span>
+                </button>
+            </div>
+        </form>
 
         <?php if (Mage::helper('ysrtech_otplogin')->isGoogleEnabled()): ?>
             <div class="ysrtech-otp-or"><span><?php echo $this->__('or') ?></span></div>

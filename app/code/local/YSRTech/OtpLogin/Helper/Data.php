@@ -13,6 +13,7 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
 {
     const XML_PATH_ENABLED            = 'ysrtech_otplogin/general/enabled';
     const XML_PATH_ALLOW_REGISTRATION = 'ysrtech_otplogin/general/allow_registration';
+    const XML_PATH_REQUIRE_LOGIN_AT_CHECKOUT = 'ysrtech_otplogin/general/require_login_at_checkout';
     const XML_PATH_OTP_TYPE           = 'ysrtech_otplogin/general/otp_type';
     const XML_PATH_OTP_LENGTH         = 'ysrtech_otplogin/general/otp_length';
     const XML_PATH_EXPIRE_TIME        = 'ysrtech_otplogin/general/expire_time';
@@ -33,6 +34,20 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     public function isRegistrationAllowed($store = null)
     {
         return Mage::getStoreConfigFlag(self::XML_PATH_ALLOW_REGISTRATION, $store);
+    }
+
+    /**
+     * Whether a guest must sign in before placing an order. Off by default:
+     * guest checkout stays available and OneStepCheckout attaches an order placed
+     * with a registered email address to that account.
+     *
+     * @param mixed $store
+     * @return bool
+     */
+    public function isLoginRequiredAtCheckout($store = null)
+    {
+        return $this->isEnabled($store)
+            && Mage::getStoreConfigFlag(self::XML_PATH_REQUIRE_LOGIN_AT_CHECKOUT, $store);
     }
 
     /**
@@ -164,6 +179,13 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
             ->setName($name)
             ->setOtp($this->hashOtp($code))
             ->setStatus(1)
+            // Stamp the row from PHP's own clock rather than the column's
+            // current_timestamp() default. Expiry (validateOtp) reads it back with
+            // strtotime(), so writing and reading through the same PHP timezone
+            // makes the two cancel out - the database server's timezone, which need
+            // not match PHP's, no longer enters into it. Leaving it to the database
+            // default made every code look expired wherever the two differed.
+            ->setCreatedAt(date('Y-m-d H:i:s'))
             ->save();
 
         return $otp;
@@ -219,9 +241,12 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
             return false;
         }
 
+        // created_at was written with PHP's clock (see saveOtpData); reading it back
+        // with strtotime() under the same PHP timezone gives a correct epoch whatever
+        // the database timezone is. time() is a timezone-independent epoch.
         $createdAt = strtotime($otp->getCreatedAt());
         $expire    = $this->getExpireTime();
-        if ((time() - $createdAt) > $expire) {
+        if ($createdAt === false || (time() - $createdAt) > $expire) {
             // Expired: burn it so it cannot be retried.
             $otp->setStatus(0)->save();
             return false;

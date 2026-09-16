@@ -76,36 +76,63 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
             return $this->_json(true, $helper->__('Please enter a valid email address.'));
         }
 
-        // Registration data is only present when the create-account form is used.
-        $isRegister = isset($params['firstname']) || isset($params['password']);
+        // Registration is only in play when the create-account form is used (it
+        // carries a first name); the sign-in form sends an email address alone.
+        $isRegister = isset($params['firstname']);
         $customer   = $this->_loadCustomerByEmail($email);
 
-        if (!$customer->getId() && !$isRegister) {
-            return $this->_json(true, $helper->__('This email address is not registered.'));
+        // ---- Passwordless sign-in --------------------------------------------------
+        // The reply must never reveal whether an address has an account, so it is the
+        // same generic line either way. A code is generated and emailed only when a
+        // matching customer actually exists; for an unknown address nothing is sent,
+        // but the flow (and the "enter your code" step) looks identical to an attacker.
+        if (!$isRegister) {
+            $this->_customerSession()->setOtpFormData(array(
+                'email'       => $email,
+                'is_register' => 0,
+                'firstname'   => '',
+                'lastname'    => '',
+                'password'    => '',
+            ));
+
+            if ($customer->getId()) {
+                try {
+                    $helper->invalidatePreviousOtps($email);
+                    $code = $helper->generateOtpCode();
+                    $helper->saveOtpData($code, $email, $customer->getName());
+                    $helper->sendOtpEmail($code, $email, $customer->getName());
+                } catch (Exception $e) {
+                    // Swallow so a send failure cannot be told apart from an unknown
+                    // address; the customer simply never receives a code.
+                    Mage::logException($e);
+                }
+            }
+
+            return $this->_json(false, $helper->__('If this email address is registered, we have sent you an email with a code to sign in.'));
         }
 
-        if ($customer->getId() && $isRegister) {
+        // ---- Registration by email verification (no password) ----------------------
+        if ($customer->getId()) {
             return $this->_json(true, $helper->__('An account already exists for this email address. Please sign in instead.'));
         }
 
-        if (!$customer->getId() && $isRegister && !$helper->isRegistrationAllowed()) {
+        if (!$helper->isRegistrationAllowed()) {
             return $this->_json(true, $helper->__('Registration is currently disabled.'));
         }
 
         try {
-            // Remember what we are doing for the verification step.
             $formData = array(
                 'email'       => $email,
-                'is_register' => $isRegister ? 1 : 0,
+                'is_register' => 1,
                 'firstname'   => isset($params['firstname']) ? trim($params['firstname']) : '',
                 'lastname'    => isset($params['lastname']) ? trim($params['lastname']) : '',
-                'password'    => isset($params['password']) ? $params['password'] : '',
+                'password'    => '',
             );
             $this->_customerSession()->setOtpFormData($formData);
 
             $name = trim($formData['firstname'] . ' ' . $formData['lastname']);
             if (!$name) {
-                $name = $customer->getId() ? $customer->getName() : $email;
+                $name = $email;
             }
 
             $helper->invalidatePreviousOtps($email);
@@ -113,10 +140,10 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
             $helper->saveOtpData($code, $email, $name);
             $helper->sendOtpEmail($code, $email, $name);
 
-            return $this->_json(false, $helper->__('An OTP has been sent to your email address.'));
+            return $this->_json(false, $helper->__('We have emailed you a code to finish creating your account.'));
         } catch (Exception $e) {
             Mage::logException($e);
-            return $this->_json(true, $helper->__('We could not send the OTP. Please try again later.'));
+            return $this->_json(true, $helper->__('We could not send your code. Please try again later.'));
         }
     }
 
@@ -140,7 +167,7 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
         $code  = trim((string) $this->getRequest()->getPost('otp'));
 
         if (!$helper->validateOtp($code, $email)) {
-            return $this->_json(true, $helper->__('The OTP is invalid or has expired.'));
+            return $this->_json(true, $helper->__('That code is invalid or has expired.'));
         }
 
         try {
@@ -149,7 +176,7 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
             if (!$customer->getId()) {
                 // Registration path.
                 if (empty($formData['is_register']) || !$helper->isRegistrationAllowed()) {
-                    return $this->_json(true, $helper->__('This email address is not registered.'));
+                    return $this->_json(true, $helper->__('That code is invalid or has expired.'));
                 }
 
                 $store    = Mage::app()->getStore();
@@ -187,6 +214,19 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
     }
 
     /**
+     * Sign the customer out and return them to checkout.
+     *
+     * Used by the "Log in with a different email" link in the checkout billing
+     * section. After logout the checkout gate treats them as a guest and shows
+     * the sign-in panel again, so they can sign in with another address.
+     */
+    public function logoutAction()
+    {
+        Mage::getSingleton('customer/session')->logout()->renewSession();
+        $this->_redirect('onestepcheckout', array('_secure' => true));
+    }
+
+    /**
      * Re-send an OTP for the email currently held in session.
      */
     public function resendotpAction()
@@ -205,20 +245,34 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
         $email = $formData['email'];
 
         try {
-            $name = trim($formData['firstname'] . ' ' . $formData['lastname']);
+            // Mirror the send step: registration always re-sends, sign-in only for a
+            // real account, and the reply is the same either way (no enumeration).
+            $isRegister = !empty($formData['is_register']);
+            $name       = trim($formData['firstname'] . ' ' . $formData['lastname']);
             if (!$name) {
                 $name = $email;
             }
 
-            $helper->invalidatePreviousOtps($email);
-            $code = $helper->generateOtpCode();
-            $helper->saveOtpData($code, $email, $name);
-            $helper->sendOtpEmail($code, $email, $name);
+            $send = $isRegister;
+            if (!$isRegister) {
+                $customer = $this->_loadCustomerByEmail($email);
+                $send     = (bool) $customer->getId();
+                if ($send) {
+                    $name = $customer->getName();
+                }
+            }
 
-            return $this->_json(false, $helper->__('A new OTP has been sent to your email address.'));
+            if ($send) {
+                $helper->invalidatePreviousOtps($email);
+                $code = $helper->generateOtpCode();
+                $helper->saveOtpData($code, $email, $name);
+                $helper->sendOtpEmail($code, $email, $name);
+            }
+
+            return $this->_json(false, $helper->__('If this email address is registered, we have sent you a new code.'));
         } catch (Exception $e) {
             Mage::logException($e);
-            return $this->_json(true, $helper->__('We could not resend the OTP. Please try again later.'));
+            return $this->_json(true, $helper->__('We could not resend your code. Please try again later.'));
         }
     }
 }
