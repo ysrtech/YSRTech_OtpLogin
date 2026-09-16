@@ -73,6 +73,18 @@
             </ysrtech_otplogin>
         </routers>
 
+        <events>
+            <!-- Block a guest from placing an order through OneStepCheckout. -->
+            <controller_action_predispatch_onestepcheckout_index_index>
+                <observers>
+                    <ysrtech_otplogin_require_login>
+                        <class>ysrtech_otplogin/observer</class>
+                        <method>requireLoginAtCheckout</method>
+                    </ysrtech_otplogin_require_login>
+                </observers>
+            </controller_action_predispatch_onestepcheckout_index_index>
+        </events>
+
         <layout>
             <updates>
                 <ysrtech_otplogin>
@@ -112,6 +124,7 @@
                 <otp_length>6</otp_length>
                 <expire_time>300</expire_time>
                 <allow_registration>1</allow_registration>
+                <require_login_at_checkout>0</require_login_at_checkout>
             </general>
             <google>
                 <enabled>0</enabled>

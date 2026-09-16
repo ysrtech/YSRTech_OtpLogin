@@ -11,7 +11,8 @@ delivered by a standard transactional email.
 
 - Sign in with an emailed OTP (no password needed).
 - Optional account creation via OTP verification.
-- Standard email + password login is still available as a second tab.
+- Passwordless only: the standard email + password form is replaced everywhere, including OneStepCheckout.
+- Optional "Require Sign-in at Checkout" gate for OneStepCheckout (off by default, so guest checkout keeps working).
 - Configurable OTP type (numeric / alphabetic / alphanumeric), length and expiry.
 - OTP codes are stored **hashed** (SHA-256), single-use, and tied to the email.
 - Uses OpenMage's transactional email system (sender identity + template are
@@ -48,6 +49,7 @@ delivered by a standard transactional email.
 |---------|-------------|
 | Enabled | Turns the popups and routes on/off. |
 | Allow Registration via OTP | If yes, unknown emails can create an account after verifying an OTP. |
+| Require Sign-in at Checkout | Yes: guests must sign in with a code before placing an order on OneStepCheckout (the form is replaced by an inline sign-in panel and a guest order submission is rejected server-side). No (default): guest checkout stays available; OneStepCheckout attaches an order placed with a registered email to that account. |
 | OTP Type | Numeric / Alphabetic / Alphanumeric. |
 | OTP Length | Number of characters in the code. |
 | Expiry Time | Seconds the code stays valid. |
@@ -58,7 +60,7 @@ delivered by a standard transactional email.
 
 1. The customer clicks **Log In** (or **Create an Account**). The theme link is
    intercepted and a popup opens.
-2. They enter their email (plus name/password for registration) and request an OTP.
+2. They enter their email (plus their name for registration) and request an OTP.
    - `otplogin/account/otploginpost` validates, generates and emails the code.
 3. They enter the code in the verification popup.
    - `otplogin/account/otppost` checks the hash + expiry, then logs them in or

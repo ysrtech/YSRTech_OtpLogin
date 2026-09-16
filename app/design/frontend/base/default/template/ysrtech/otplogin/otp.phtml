@@ -1,6 +1,6 @@
 <?php
 /**
- * YSRTech OtpLogin - OTP verification popup.
+ * YSRTech OtpLogin - code verification popup.
  *
  * @category  YSRTech
  * @package   YSRTech_OtpLogin
@@ -12,25 +12,26 @@ $helper = Mage::helper('ysrtech_otplogin');
 <div id="ysrtech-otp-verify" class="ysrtech-otp-modal" style="display:none;">
     <div class="ysrtech-otp-dialog">
         <button type="button" class="ysrtech-otp-close" data-otp-close="1" aria-label="<?php echo $this->__('Close') ?>">&times;</button>
-        <h2 class="ysrtech-otp-title"><?php echo $this->__('Enter OTP') ?></h2>
-        <p class="ysrtech-otp-hint"><?php echo $this->__('We have emailed you a one-time password. Please enter it below.') ?></p>
+        <h2 class="ysrtech-otp-title"><?php echo $this->__('Enter your code') ?></h2>
+        <p class="ysrtech-otp-hint"><?php echo $this->__('If your email is registered, we have just sent you a code. Enter it below to sign in.') ?></p>
 
         <div class="ysrtech-otp-messages"></div>
 
         <form id="ysrtech-otp-verify-form" class="ysrtech-otp-form">
             <div class="ysrtech-otp-field">
-                <label for="ysrtech-otp-code"><?php echo $this->__('One-Time Password') ?></label>
+                <label for="ysrtech-otp-code"><?php echo $this->__('Code') ?></label>
                 <input type="text" id="ysrtech-otp-code" name="otp" required inputmode="numeric"
-                       autocomplete="one-time-code" placeholder="<?php echo $this->__('Enter OTP') ?>" class="input-text"/>
+                       autocomplete="one-time-code" placeholder="<?php echo $this->__('Enter your code') ?>" class="input-text"/>
             </div>
             <div class="ysrtech-otp-actions">
                 <button type="submit" class="button ysrtech-otp-confirm"
+                        data-loading="<?php echo $this->__('Signing in…') ?>"
                         data-url="<?php echo $this->getUrl('otplogin/account/otppost', array('_secure' => true)) ?>">
-                    <span><?php echo $this->__('Verify &amp; Continue') ?></span>
+                    <span><?php echo $this->__('Sign in') ?></span>
                 </button>
                 <a href="#" class="ysrtech-otp-resend"
                    data-url="<?php echo $this->getUrl('otplogin/account/resendotp', array('_secure' => true)) ?>">
-                    <?php echo $this->__('Resend OTP') ?>
+                    <?php echo $this->__('Resend code') ?>
                 </a>
             </div>
         </form>

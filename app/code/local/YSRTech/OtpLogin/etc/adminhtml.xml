@@ -8,25 +8,23 @@
  */
 -->
 <config>
-    <adminhtml>
-        <acl>
-            <resources>
-                <admin>
-                    <children>
-                        <system>
-                            <children>
-                                <config>
-                                    <children>
-                                        <ysrtech_otplogin translate="title" module="ysrtech_otplogin">
-                                            <title>Email OTP Login</title>
-                                        </ysrtech_otplogin>
-                                    </children>
-                                </config>
-                            </children>
-                        </system>
-                    </children>
-                </admin>
-            </resources>
-        </acl>
-    </adminhtml>
+    <acl>
+        <resources>
+            <admin>
+                <children>
+                    <system>
+                        <children>
+                            <config>
+                                <children>
+                                    <ysrtech_otplogin translate="title" module="ysrtech_otplogin">
+                                        <title>Email OTP Login</title>
+                                    </ysrtech_otplogin>
+                                </children>
+                            </config>
+                        </children>
+                    </system>
+                </children>
+            </admin>
+        </resources>
+    </acl>
 </config>
