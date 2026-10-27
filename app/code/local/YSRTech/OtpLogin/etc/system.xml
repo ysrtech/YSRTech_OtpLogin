@@ -86,6 +86,45 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </expire_time>
+                        <max_attempts translate="label comment">
+                            <label>Wrong Guesses per Code</label>
+                            <comment>After this many wrong codes the code stops working and a new one has to be requested.</comment>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </max_attempts>
+                        <max_requests_per_email translate="label comment">
+                            <label>Codes per Email Address</label>
+                            <comment>Most codes (including resends) one email address can request within the window below.</comment>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </max_requests_per_email>
+                        <max_requests_per_ip translate="label comment">
+                            <label>Codes per IP Address</label>
+                            <comment>Most codes one visitor IP address can request, for any email addresses, within the window below.</comment>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </max_requests_per_ip>
+                        <request_window translate="label comment">
+                            <label>Request Limit Window (minutes)</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <sort_order>80</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </request_window>
                     </fields>
                 </general>
                 <google translate="label" module="ysrtech_otplogin">

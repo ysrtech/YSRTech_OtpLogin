@@ -7,6 +7,10 @@
  *   otplogin/account/otppost       -> verify OTP, then log in or register
  *   otplogin/account/resendotp     -> re-send the OTP
  *
+ * Codes are limited per email and per IP (counting requests for unknown addresses
+ * too, so the limit reveals nothing), and each code allows a set number of wrong
+ * guesses before it is burned. See the OTP Login settings.
+ *
  * @category  YSRTech
  * @package   YSRTech_OtpLogin
  */
@@ -42,6 +46,17 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
                 'errors'  => (bool) $error,
                 'message' => $message,
             )));
+    }
+
+    /**
+     * The reply when too many codes were requested; the same for every address.
+     *
+     * @return string
+     */
+    protected function _tooManyRequestsMessage()
+    {
+        $helper = $this->_helper();
+        return $helper->__('Too many codes have been requested. Please wait %d minutes and try again.', $helper->getRequestWindow());
     }
 
     /**
@@ -81,6 +96,10 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
         $isRegister = isset($params['firstname']);
         $customer   = $this->_loadCustomerByEmail($email);
 
+        if ($helper->isRequestLimited($email)) {
+            return $this->_json(true, $this->_tooManyRequestsMessage());
+        }
+
         // ---- Passwordless sign-in --------------------------------------------------
         // The reply must never reveal whether an address has an account, so it is the
         // same generic line either way. A code is generated and emailed only when a
@@ -95,17 +114,21 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
                 'password'    => '',
             ));
 
-            if ($customer->getId()) {
-                try {
+            try {
+                if ($customer->getId()) {
                     $helper->invalidatePreviousOtps($email);
                     $code = $helper->generateOtpCode();
                     $helper->saveOtpData($code, $email, $customer->getName());
                     $helper->sendOtpEmail($code, $email, $customer->getName());
-                } catch (Exception $e) {
-                    // Swallow so a send failure cannot be told apart from an unknown
-                    // address; the customer simply never receives a code.
-                    Mage::logException($e);
+                } else {
+                    // Count it like a real request, so the request limit cannot be
+                    // used to tell which addresses have an account.
+                    $helper->recordDecoyRequest($email);
                 }
+            } catch (Exception $e) {
+                // Swallow so a send failure cannot be told apart from an unknown
+                // address; the customer simply never receives a code.
+                Mage::logException($e);
             }
 
             return $this->_json(false, $helper->__('If this email address is registered, we have sent you an email with a code to sign in.'));
@@ -166,7 +189,11 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
         $email = $formData['email'];
         $code  = trim((string) $this->getRequest()->getPost('otp'));
 
-        if (!$helper->validateOtp($code, $email)) {
+        $result = $helper->verifyOtp($code, $email);
+        if ($result === YSRTech_OtpLogin_Helper_Data::OTP_LOCKED) {
+            return $this->_json(true, $helper->__('Too many incorrect codes. Please request a new code.'));
+        }
+        if ($result !== YSRTech_OtpLogin_Helper_Data::OTP_VALID) {
             return $this->_json(true, $helper->__('That code is invalid or has expired.'));
         }
 
@@ -244,6 +271,10 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
 
         $email = $formData['email'];
 
+        if ($helper->isRequestLimited($email)) {
+            return $this->_json(true, $this->_tooManyRequestsMessage());
+        }
+
         try {
             // Mirror the send step: registration always re-sends, sign-in only for a
             // real account, and the reply is the same either way (no enumeration).
@@ -267,6 +298,8 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
                 $code = $helper->generateOtpCode();
                 $helper->saveOtpData($code, $email, $name);
                 $helper->sendOtpEmail($code, $email, $name);
+            } else {
+                $helper->recordDecoyRequest($email);
             }
 
             return $this->_json(false, $helper->__('If this email address is registered, we have sent you a new code.'));

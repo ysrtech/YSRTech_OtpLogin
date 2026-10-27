@@ -48,4 +48,17 @@ class YSRTech_OtpLogin_Model_Observer
         $action->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_DISPATCH, true);
         $action->getResponse()->setRedirect(Mage::getUrl('onestepcheckout', array('_secure' => true)));
     }
+
+    /**
+     * Daily cron: drop code rows older than a week. Request limits only look back
+     * minutes, and every request (including for unknown addresses) adds a row.
+     */
+    public function cleanupOldCodes()
+    {
+        $resource = Mage::getSingleton('core/resource');
+        $resource->getConnection('core_write')->delete(
+            $resource->getTableName('ysrtech_otplogin/otp'),
+            array('created_at < ?' => date('Y-m-d H:i:s', time() - 7 * 86400))
+        );
+    }
 }

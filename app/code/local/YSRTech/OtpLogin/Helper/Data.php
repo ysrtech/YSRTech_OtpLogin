@@ -17,7 +17,16 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     const XML_PATH_OTP_TYPE           = 'ysrtech_otplogin/general/otp_type';
     const XML_PATH_OTP_LENGTH         = 'ysrtech_otplogin/general/otp_length';
     const XML_PATH_EXPIRE_TIME        = 'ysrtech_otplogin/general/expire_time';
+    const XML_PATH_MAX_ATTEMPTS       = 'ysrtech_otplogin/general/max_attempts';
+    const XML_PATH_REQUESTS_PER_EMAIL = 'ysrtech_otplogin/general/max_requests_per_email';
+    const XML_PATH_REQUESTS_PER_IP    = 'ysrtech_otplogin/general/max_requests_per_ip';
+    const XML_PATH_REQUEST_WINDOW     = 'ysrtech_otplogin/general/request_window';
     const XML_PATH_EMAIL_IDENTITY     = 'ysrtech_otplogin/email/identity';
+
+    /** Results of verifyOtp(). */
+    const OTP_VALID   = 'valid';
+    const OTP_INVALID = 'invalid';
+    const OTP_LOCKED  = 'locked';
     const XML_PATH_EMAIL_TEMPLATE     = 'ysrtech_otplogin/email/template';
 
     /**
@@ -76,6 +85,98 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     {
         $expire = (int) Mage::getStoreConfig(self::XML_PATH_EXPIRE_TIME, $store);
         return $expire > 0 ? $expire : 300;
+    }
+
+    /**
+     * Wrong guesses allowed against one code before it is burned.
+     *
+     * @return int
+     */
+    public function getMaxAttempts($store = null)
+    {
+        $n = (int) Mage::getStoreConfig(self::XML_PATH_MAX_ATTEMPTS, $store);
+        return $n > 0 ? $n : 5;
+    }
+
+    /**
+     * Request limit window in minutes.
+     *
+     * @return int
+     */
+    public function getRequestWindow($store = null)
+    {
+        $n = (int) Mage::getStoreConfig(self::XML_PATH_REQUEST_WINDOW, $store);
+        return $n > 0 ? $n : 15;
+    }
+
+    /**
+     * The visitor's IP. Behind Cloudflare the connecting IP is in CF-Connecting-IP;
+     * a forged header can only dodge the per-IP limit, never pass a code check.
+     *
+     * @return string
+     */
+    public function getClientIp()
+    {
+        $cf = isset($_SERVER['HTTP_CF_CONNECTING_IP']) ? trim($_SERVER['HTTP_CF_CONNECTING_IP']) : '';
+        if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP)) {
+            return $cf;
+        }
+        return (string) Mage::helper('core/http')->getRemoteAddr();
+    }
+
+    /**
+     * Whether another code may be sent to this email from this IP. Every request
+     * counts, for unknown addresses too (see recordDecoyRequest()), so hitting the
+     * limit says nothing about whether an account exists.
+     *
+     * @param  string $email
+     * @return bool   true when the limit is reached
+     */
+    public function isRequestLimited($email)
+    {
+        $since      = date('Y-m-d H:i:s', time() - $this->getRequestWindow() * 60);
+        $perEmail   = (int) Mage::getStoreConfig(self::XML_PATH_REQUESTS_PER_EMAIL);
+        $perIp      = (int) Mage::getStoreConfig(self::XML_PATH_REQUESTS_PER_IP);
+        $resource   = Mage::getSingleton('core/resource');
+        $db         = $resource->getConnection('core_read');
+        $table      = $resource->getTableName('ysrtech_otplogin/otp');
+
+        if ($perEmail > 0) {
+            $n = (int) $db->fetchOne($db->select()->from($table, 'COUNT(*)')
+                ->where('email = ?', $email)->where('created_at >= ?', $since));
+            if ($n >= $perEmail) {
+                return true;
+            }
+        }
+        $ip = $this->getClientIp();
+        if ($perIp > 0 && $ip !== '') {
+            $n = (int) $db->fetchOne($db->select()->from($table, 'COUNT(*)')
+                ->where('ip = ?', $ip)->where('created_at >= ?', $since));
+            if ($n >= $perIp) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Count a sign-in request for an address with no account, so the request
+     * limit treats it like a real one. The row can never be used as a code.
+     *
+     * @param  string $email
+     * @return $this
+     */
+    public function recordDecoyRequest($email)
+    {
+        Mage::getModel('ysrtech_otplogin/otp')
+            ->setEmail($email)
+            ->setName('')
+            ->setOtp(hash('sha256', 'decoy:' . bin2hex(random_bytes(16))))
+            ->setStatus(0)
+            ->setIp($this->getClientIp())
+            ->setCreatedAt(date('Y-m-d H:i:s'))
+            ->save();
+        return $this;
     }
 
     /**
@@ -179,6 +280,7 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
             ->setName($name)
             ->setOtp($this->hashOtp($code))
             ->setStatus(1)
+            ->setIp($this->getClientIp())
             // Stamp the row from PHP's own clock rather than the column's
             // current_timestamp() default. Expiry (validateOtp) reads it back with
             // strtotime(), so writing and reading through the same PHP timezone
@@ -214,48 +316,79 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     /**
      * Validate the supplied OTP for the given email.
      *
-     * Checks the latest active record, verifies the hash matches and that the
-     * code has not expired. On success the record is consumed (status = 0).
-     *
      * @param  string $code
      * @param  string $email
      * @return bool
      */
     public function validateOtp($code, $email)
     {
+        return $this->verifyOtp($code, $email) === self::OTP_VALID;
+    }
+
+    /**
+     * Check a code against the latest active code for the email.
+     *
+     * Every guess is counted before it is compared, with one conditional UPDATE
+     * that refuses once the limit is reached, so guesses fired in parallel cannot
+     * get past it. A code that is used, expired or out of guesses stops working.
+     *
+     * @param  string $code
+     * @param  string $email
+     * @return string OTP_VALID, OTP_INVALID, or OTP_LOCKED (out of guesses)
+     */
+    public function verifyOtp($code, $email)
+    {
         if (!strlen((string) $code) || !strlen((string) $email)) {
-            return false;
+            return self::OTP_INVALID;
         }
 
-        /** @var YSRTech_OtpLogin_Model_Resource_Otp_Collection $collection */
-        $collection = Mage::getModel('ysrtech_otplogin/otp')->getCollection()
+        /** @var YSRTech_OtpLogin_Model_Otp $otp */
+        $otp = Mage::getModel('ysrtech_otplogin/otp')->getCollection()
             ->addFieldToFilter('email', $email)
-            ->addFieldToFilter('otp', $this->hashOtp($code))
             ->addFieldToFilter('status', 1)
             ->setOrder('entity_id', 'DESC')
-            ->setPageSize(1);
-
-        /** @var YSRTech_OtpLogin_Model_Otp $otp */
-        $otp = $collection->getFirstItem();
+            ->setPageSize(1)
+            ->getFirstItem();
         if (!$otp->getId()) {
-            return false;
+            return self::OTP_INVALID;
         }
 
         // created_at was written with PHP's clock (see saveOtpData); reading it back
         // with strtotime() under the same PHP timezone gives a correct epoch whatever
         // the database timezone is. time() is a timezone-independent epoch.
         $createdAt = strtotime($otp->getCreatedAt());
-        $expire    = $this->getExpireTime();
-        if ($createdAt === false || (time() - $createdAt) > $expire) {
+        if ($createdAt === false || (time() - $createdAt) > $this->getExpireTime()) {
             // Expired: burn it so it cannot be retried.
             $otp->setStatus(0)->save();
-            return false;
+            return self::OTP_INVALID;
         }
 
-        // Consume the OTP so it cannot be reused.
-        $otp->setStatus(0)->save();
+        $max      = $this->getMaxAttempts();
+        $resource = Mage::getSingleton('core/resource');
+        $db       = $resource->getConnection('core_write');
+        $table    = $resource->getTableName('ysrtech_otplogin/otp');
+        $counted  = $db->update(
+            $table,
+            array('attempts' => new Zend_Db_Expr('attempts + 1')),
+            array('entity_id = ?' => (int) $otp->getId(), 'status = ?' => 1, 'attempts < ?' => $max)
+        );
+        if (!$counted) {
+            $db->update($table, array('status' => 0), array('entity_id = ?' => (int) $otp->getId()));
+            return self::OTP_LOCKED;
+        }
 
-        return true;
+        if (hash_equals((string) $otp->getOtp(), $this->hashOtp($code))) {
+            // Consume the OTP so it cannot be reused.
+            $db->update($table, array('status' => 0), array('entity_id = ?' => (int) $otp->getId()));
+            return self::OTP_VALID;
+        }
+
+        $attempts = (int) $db->fetchOne($db->select()->from($table, 'attempts')->where('entity_id = ?', (int) $otp->getId()));
+        if ($attempts >= $max) {
+            $db->update($table, array('status' => 0), array('entity_id = ?' => (int) $otp->getId()));
+            return self::OTP_LOCKED;
+        }
+        return self::OTP_INVALID;
     }
 
     /* ------------------------------------------------------------------ *

@@ -10,7 +10,7 @@
 <config>
     <modules>
         <YSRTech_OtpLogin>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
         </YSRTech_OtpLogin>
     </modules>
 
@@ -116,6 +116,15 @@
         </translate>
     </adminhtml>
 
+    <crontab>
+        <jobs>
+            <ysrtech_otplogin_cleanup>
+                <schedule><cron_expr>17 4 * * *</cron_expr></schedule>
+                <run><model>ysrtech_otplogin/observer::cleanupOldCodes</model></run>
+            </ysrtech_otplogin_cleanup>
+        </jobs>
+    </crontab>
+
     <default>
         <ysrtech_otplogin>
             <general>
@@ -125,6 +134,10 @@
                 <expire_time>300</expire_time>
                 <allow_registration>1</allow_registration>
                 <require_login_at_checkout>0</require_login_at_checkout>
+                <max_attempts>5</max_attempts>
+                <max_requests_per_email>5</max_requests_per_email>
+                <max_requests_per_ip>20</max_requests_per_ip>
+                <request_window>15</request_window>
             </general>
             <google>
                 <enabled>0</enabled>

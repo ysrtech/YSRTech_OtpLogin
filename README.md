@@ -15,6 +15,10 @@ delivered by a standard transactional email.
 - Optional "Require Sign-in at Checkout" gate for OneStepCheckout (off by default, so guest checkout keeps working).
 - Configurable OTP type (numeric / alphabetic / alphanumeric), length and expiry.
 - OTP codes are stored **hashed** (SHA-256), single-use, and tied to the email.
+- Brute-force and inbox-flooding limits: a set number of wrong guesses per code
+  (then it is burned), and a cap on codes requested per email and per IP address
+  within a time window. Requests for unknown addresses count too, so the limits
+  never reveal which addresses have an account.
 - Uses OpenMage's transactional email system (sender identity + template are
   configurable in the admin).
 
@@ -53,6 +57,10 @@ delivered by a standard transactional email.
 | OTP Type | Numeric / Alphabetic / Alphanumeric. |
 | OTP Length | Number of characters in the code. |
 | Expiry Time | Seconds the code stays valid. |
+| Wrong Guesses per Code | Default 5. After this many wrong codes the code stops working and a new one must be requested. |
+| Codes per Email Address | Default 5. Most codes (resends included) one email address can request within the window. |
+| Codes per IP Address | Default 20. Most codes one visitor IP can request, for any addresses, within the window. Behind Cloudflare the `CF-Connecting-IP` header is used. |
+| Request Limit Window (minutes) | Default 15. |
 | Email Sender | Which store email identity sends the OTP. |
 | Email Template | The transactional template used (defaults to the bundled one). |
 
@@ -63,9 +71,12 @@ delivered by a standard transactional email.
 2. They enter their email (plus their name for registration) and request an OTP.
    - `otplogin/account/otploginpost` validates, generates and emails the code.
 3. They enter the code in the verification popup.
-   - `otplogin/account/otppost` checks the hash + expiry, then logs them in or
-     creates the account.
-4. `otplogin/account/resendotp` issues a fresh code if needed.
+   - `otplogin/account/otppost` checks the code against the email's latest code
+     (hash, expiry and remaining guesses), then logs them in or creates the account.
+     Each guess is counted before it is compared, by one conditional `UPDATE` that
+     refuses at the limit, so guesses fired in parallel cannot get past it.
+4. `otplogin/account/resendotp` issues a fresh code if needed (same request limits).
+5. A daily cron job (`ysrtech_otplogin_cleanup`) deletes code rows older than a week.
 
 ## Theme note
 
