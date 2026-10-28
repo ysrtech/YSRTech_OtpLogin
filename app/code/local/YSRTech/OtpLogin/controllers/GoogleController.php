@@ -45,7 +45,7 @@ class YSRTech_OtpLogin_GoogleController extends Mage_Core_Controller_Front_Actio
         }
 
         // CSRF state token, remembered for the callback.
-        $state = md5(uniqid('', true) . mt_rand());
+        $state = bin2hex(random_bytes(16));
         $this->_customerSession()->setGoogleOauthState($state);
 
         $this->getResponse()->setRedirect($helper->getGoogleAuthUrl($state));

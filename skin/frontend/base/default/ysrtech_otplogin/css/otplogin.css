@@ -30,18 +30,31 @@ body.ysrtech-otp-open {
     box-sizing: border-box;
 }
 
-.ysrtech-otp-close {
+/* Scoped to the dialog so a theme's generic button rules (full width, fixed height,
+   coloured background) cannot stretch the close button across the top of the popup. */
+.ysrtech-otp-dialog .ysrtech-otp-close {
     position: absolute;
     top: 10px;
     right: 12px;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+    padding: 0 4px;
     border: 0;
+    border-radius: 0;
+    box-shadow: none;
     background: transparent;
     font-size: 26px;
     line-height: 1;
     cursor: pointer;
     color: #888;
 }
-.ysrtech-otp-close:hover { color: #222; }
+.ysrtech-otp-dialog .ysrtech-otp-close:hover,
+.ysrtech-otp-dialog .ysrtech-otp-close:focus {
+    background: transparent;
+    color: #222;
+}
 
 .ysrtech-otp-title {
     margin: 0 0 16px;

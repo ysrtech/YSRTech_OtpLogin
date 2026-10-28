@@ -202,10 +202,13 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
                 break;
         }
 
+        // random_int() draws from the system CSPRNG. mt_rand() is a Mersenne Twister whose
+        // state can be recovered from its output, so codes requested for an attacker's own
+        // address could predict the next code a worker issues for someone else.
         $max  = strlen($pool) - 1;
         $code = '';
         for ($i = 0; $i < $length; $i++) {
-            $code .= $pool[mt_rand(0, $max)];
+            $code .= $pool[random_int(0, $max)];
         }
 
         return $code;
