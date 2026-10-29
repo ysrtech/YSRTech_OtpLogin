@@ -1,0 +1,25 @@
+<!--@subject Uw inlogcode voor {{var store_name}} @-->
+<!--@vars
+{"var otp":"Sign-in code","var name":"Recipient name","var store_name":"Store name","var expire_minutes":"Minutes until expiry"}
+@-->
+
+<!--@styles
+@-->
+
+{{template config_path="design/email/header"}}
+{{inlinecss file="email-inline.css"}}
+
+<table cellpadding="0" cellspacing="0" border="0">
+    <tr>
+        <td class="action-content">
+            {{depend name}}<p>Beste {{var name}},</p>{{/depend}}
+            <p>Gebruik de onderstaande code om in te loggen op uw account.</p>
+            <p style="text-align:center; margin:28px 0;">
+                <span style="display:inline-block; font-size:30px; letter-spacing:8px; font-weight:bold; border:1px dashed #c76f5c; border-radius:6px; padding:14px 26px; color:#231f20;">{{var otp}}</span>
+            </p>
+            <p>Deze code verloopt over {{var expire_minutes}} minuten. Heeft u deze code niet aangevraagd? Dan kunt u deze e-mail negeren.</p>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer"}}

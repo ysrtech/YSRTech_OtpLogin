@@ -9,6 +9,7 @@
 $helper = Mage::helper('ysrtech_otplogin');
 ?>
 <?php if ($helper->isEnabled() && !Mage::getSingleton('customer/session')->isLoggedIn()): ?>
+<script type="text/javascript">window.YsrtechOtpConfig = <?php echo Mage::helper('core')->jsonEncode($helper->getJsConfig()) ?>;</script>
 <div id="ysrtech-otp-verify" class="ysrtech-otp-modal" style="display:none;">
     <div class="ysrtech-otp-dialog">
         <button type="button" class="ysrtech-otp-close" data-otp-close="1" aria-label="<?php echo $this->__('Close') ?>">&times;</button>

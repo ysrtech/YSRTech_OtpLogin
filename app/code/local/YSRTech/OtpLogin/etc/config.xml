@@ -10,7 +10,7 @@
 <config>
     <modules>
         <YSRTech_OtpLogin>
-            <version>1.1.1</version>
+            <version>1.2.0</version>
         </YSRTech_OtpLogin>
     </modules>
 
@@ -74,6 +74,23 @@
         </routers>
 
         <events>
+            <!-- Create Account page: only for an address confirmed with a code. -->
+            <controller_action_predispatch_customer_account_createpost>
+                <observers>
+                    <ysrtech_otplogin_guard_registration>
+                        <class>ysrtech_otplogin/observer</class>
+                        <method>guardRegistration</method>
+                    </ysrtech_otplogin_guard_registration>
+                </observers>
+            </controller_action_predispatch_customer_account_createpost>
+            <customer_register_success>
+                <observers>
+                    <ysrtech_otplogin_forget_verified_email>
+                        <class>ysrtech_otplogin/observer</class>
+                        <method>forgetVerifiedEmail</method>
+                    </ysrtech_otplogin_forget_verified_email>
+                </observers>
+            </customer_register_success>
             <!-- Block a guest from placing an order through OneStepCheckout. -->
             <controller_action_predispatch_onestepcheckout_index_index>
                 <observers>
@@ -133,6 +150,7 @@
                 <otp_length>6</otp_length>
                 <expire_time>300</expire_time>
                 <allow_registration>1</allow_registration>
+                <registration_form>page</registration_form>
                 <require_login_at_checkout>0</require_login_at_checkout>
                 <max_attempts>5</max_attempts>
                 <max_requests_per_email>5</max_requests_per_email>

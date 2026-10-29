@@ -200,6 +200,17 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
         try {
             $customer = $this->_loadCustomerByEmail($email);
 
+            // Create Account page: the code only confirms the address; the page's own form then
+            // creates the account with all its fields (see Observer::guardRegistration).
+            if (!$customer->getId() && !empty($formData['is_register']) && $this->getRequest()->getPost('verify_only')) {
+                if (!$helper->isRegistrationPageMode()) {
+                    return $this->_json(true, $helper->__('That code is invalid or has expired.'));
+                }
+                $helper->markEmailVerified($email);
+                $this->_customerSession()->unsOtpFormData();
+                return $this->_json(false, $helper->__('Your email address is confirmed. Creating your account…'));
+            }
+
             if (!$customer->getId()) {
                 // Registration path.
                 if (empty($formData['is_register']) || !$helper->isRegistrationAllowed()) {

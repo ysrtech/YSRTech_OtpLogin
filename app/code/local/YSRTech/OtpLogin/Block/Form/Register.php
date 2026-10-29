@@ -15,7 +15,7 @@ class YSRTech_OtpLogin_Block_Form_Register extends Mage_Core_Block_Template
     protected function _toHtml()
     {
         $helper = Mage::helper('ysrtech_otplogin');
-        if (!$helper->isEnabled() || !$this->isRegistrationAllowed()) {
+        if (!$helper->isEnabled() || !$this->isRegistrationAllowed() || $helper->isRegistrationPageMode()) {
             return '';
         }
         return parent::_toHtml();

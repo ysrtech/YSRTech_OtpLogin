@@ -53,6 +53,7 @@ delivered by a standard transactional email.
 |---------|-------------|
 | Enabled | Turns the popups and routes on/off. |
 | Allow Registration via OTP | If yes, unknown emails can create an account after verifying an OTP. |
+| Create Account Form | The store's own Create Account page (default) or the popup. See *Store pages*. |
 | Require Sign-in at Checkout | Yes: guests must sign in with a code before placing an order on OneStepCheckout (the form is replaced by an inline sign-in panel and a guest order submission is rejected server-side). No (default): guest checkout stays available; OneStepCheckout attaches an order placed with a registered email to that account. |
 | OTP Type | Numeric / Alphabetic / Alphanumeric. |
 | OTP Length | Number of characters in the code. |
@@ -63,6 +64,23 @@ delivered by a standard transactional email.
 | Request Limit Window (minutes) | Default 15. |
 | Email Sender | Which store email identity sends the OTP. |
 | Email Template | The transactional template used (defaults to the bundled one). |
+
+## Store pages
+
+With the module enabled, the theme's own pages are adapted in the browser (`otplogin.js`), so
+they keep the theme's look and fields:
+
+- **Login page** (and every My Account page, which redirects there): the password field, the
+  "forgot password" link and "remember me" are removed; the button emails a code, and after the
+  code the customer returns to the page they wanted (the page's `referer`).
+- **Create Account page** (*Create Account Form* = the store's own page, the default): the
+  password fields are removed and the button emails a confirmation code. Once the code is
+  entered, the page's own form is submitted with all its fields (address, VAT, ...), so the
+  theme's and other modules' registration handling runs unchanged. Server side, an account is
+  only created for an address confirmed with a code in that session; the customer never sets a
+  password (a random one is filled in). A Cloudflare Turnstile token in the form is refreshed
+  before submitting, since finding the code can take longer than the token lasts.
+- *Create Account Form* = popup: the earlier name-and-email popup instead.
 
 ## How it works
 

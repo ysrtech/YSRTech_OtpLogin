@@ -50,6 +50,52 @@ class YSRTech_OtpLogin_Model_Observer
     }
 
     /**
+     * controller_action_predispatch_customer_account_createpost
+     *
+     * With accounts created on the store's own Create Account page, an account is only
+     * created for an address confirmed with a code in this session. The customer never sets
+     * a password, so a random one is filled in for the form's own password checks.
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function guardRegistration(Varien_Event_Observer $observer)
+    {
+        $helper = Mage::helper('ysrtech_otplogin');
+        if (!$helper->isRegistrationPageMode()) {
+            return;
+        }
+        /** @var Mage_Core_Controller_Front_Action $action */
+        $action  = $observer->getControllerAction();
+        $request = $action->getRequest();
+        if (!$request->isPost() || Mage::getSingleton('customer/session')->isLoggedIn()) {
+            return;
+        }
+
+        if (!$helper->isEmailVerified($request->getPost('email'))) {
+            $session = Mage::getSingleton('customer/session');
+            $session->setCustomerFormData($request->getPost());
+            $session->addError($helper->__('Please confirm your email address with the code we email you.'));
+            $action->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_DISPATCH, true);
+            $action->getResponse()->setRedirect(Mage::getUrl('customer/account/create', array('_secure' => true)));
+            return;
+        }
+
+        $password = Mage::getModel('customer/customer')->generatePassword(16);
+        $request->setPost('password', $password);
+        $request->setPost('confirmation', $password);
+    }
+
+    /**
+     * customer_register_success: the confirmed address has been used.
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function forgetVerifiedEmail(Varien_Event_Observer $observer)
+    {
+        Mage::helper('ysrtech_otplogin')->forgetVerifiedEmail();
+    }
+
+    /**
      * Daily cron: drop code rows older than a week. Request limits only look back
      * minutes, and every request (including for unknown addresses) adds a row.
      */

@@ -43,7 +43,11 @@
         <?php if ($this->isRegistrationAllowed()): ?>
             <div class="ysrtech-otp-foot">
                 <?php echo $this->__('New customer?') ?>
-                <a href="#" data-otp-open="register"><?php echo $this->__('Create an account') ?></a>
+                <?php if (Mage::helper('ysrtech_otplogin')->isRegistrationPageMode()): ?>
+                    <a href="<?php echo $this->getRegistrationUrl() ?>"><?php echo $this->__('Create an account') ?></a>
+                <?php else: ?>
+                    <a href="#" data-otp-open="register"><?php echo $this->__('Create an account') ?></a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>

@@ -22,6 +22,10 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     const XML_PATH_REQUESTS_PER_IP    = 'ysrtech_otplogin/general/max_requests_per_ip';
     const XML_PATH_REQUEST_WINDOW     = 'ysrtech_otplogin/general/request_window';
     const XML_PATH_EMAIL_IDENTITY     = 'ysrtech_otplogin/email/identity';
+    const XML_PATH_REGISTRATION_FORM  = 'ysrtech_otplogin/general/registration_form';
+
+    /** How long a confirmed address may be used to create the account, in seconds. */
+    const VERIFIED_EMAIL_LIFETIME = 1800;
 
     /** Results of verifyOtp(). */
     const OTP_VALID   = 'valid';
@@ -43,6 +47,81 @@ class YSRTech_OtpLogin_Helper_Data extends Mage_Core_Helper_Abstract
     public function isRegistrationAllowed($store = null)
     {
         return Mage::getStoreConfigFlag(self::XML_PATH_ALLOW_REGISTRATION, $store);
+    }
+
+    /**
+     * Accounts are created on the store's own Create Account page (its theme, its fields),
+     * with the email address confirmed by a code before the form is submitted, rather than
+     * in the name-and-email popup.
+     *
+     * @param mixed $store
+     * @return bool
+     */
+    public function isRegistrationPageMode($store = null)
+    {
+        return $this->isEnabled($store) && $this->isRegistrationAllowed($store)
+            && Mage::getStoreConfig(self::XML_PATH_REGISTRATION_FORM, $store) !== YSRTech_OtpLogin_Model_Source_Registrationform::POPUP;
+    }
+
+    /**
+     * Remember in the session that this address was confirmed with a code, so the Create
+     * Account form may be submitted with it.
+     *
+     * @param string $email
+     * @return $this
+     */
+    public function markEmailVerified($email)
+    {
+        Mage::getSingleton('customer/session')->setOtpVerifiedEmail(array(
+            'email' => strtolower(trim($email)),
+            'at'    => time(),
+        ));
+        return $this;
+    }
+
+    /**
+     * @param string $email
+     * @return bool
+     */
+    public function isEmailVerified($email)
+    {
+        $verified = Mage::getSingleton('customer/session')->getOtpVerifiedEmail();
+        return is_array($verified)
+            && isset($verified['email'], $verified['at'])
+            && $verified['email'] === strtolower(trim((string) $email))
+            && time() - (int) $verified['at'] <= self::VERIFIED_EMAIL_LIFETIME;
+    }
+
+    /**
+     * @return $this
+     */
+    public function forgetVerifiedEmail()
+    {
+        Mage::getSingleton('customer/session')->unsOtpVerifiedEmail();
+        return $this;
+    }
+
+    /**
+     * Settings and texts for otplogin.js.
+     *
+     * @return array
+     */
+    public function getJsConfig()
+    {
+        return array(
+            'registrationPage' => $this->isRegistrationPageMode(),
+            'sendUrl'          => Mage::getUrl('otplogin/account/otploginpost', array('_secure' => true)),
+            'accountUrl'       => Mage::getUrl('customer/account', array('_secure' => true)),
+            'text'             => array(
+                'sendCode'    => $this->__('Email me a sign-in code'),
+                'confirmCode' => $this->__('Email me a confirmation code'),
+                'error'       => $this->__('An error occurred, please try again later.'),
+                'wait'        => $this->__('Please wait…'),
+                'verifyTitle' => $this->__('Confirm your email address'),
+                'verifyHint'  => $this->__('We have emailed you a code. Enter it below to confirm your email address and create your account.'),
+                'verifyButton'=> $this->__('Confirm and create account'),
+            ),
+        );
     }
 
     /**
