@@ -86,6 +86,39 @@ class YSRTech_OtpLogin_Model_Observer
     }
 
     /**
+     * controller_action_predispatch_customer_account_editpost
+     *
+     * Customers who sign in with a code never set a password, but the account edit form
+     * checks the current password on every save (name, email, ...). The customer is signed
+     * in, so the check is satisfied here: a fresh random password is stored and posted as the
+     * current one. A password change is not possible.
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function passwordlessAccountEdit(Varien_Event_Observer $observer)
+    {
+        if (!Mage::helper('ysrtech_otplogin')->isEnabled()) {
+            return;
+        }
+        $session = Mage::getSingleton('customer/session');
+        $request = $observer->getControllerAction()->getRequest();
+        if (!$request->isPost() || !$session->isLoggedIn()) {
+            return;
+        }
+        $customer = $session->getCustomer();
+        $password = $customer->generatePassword(16);
+        // Only the hash: setPassword() would also leave the plain password on the customer,
+        // which the edit form's validation then treats as a password change.
+        $customer->setPasswordHash($customer->hashPassword($password));
+        $customer->getResource()->saveAttribute($customer, 'password_hash');
+        $request->setPost('current_password', $password);
+        $request->setPost('change_password', '');
+        $request->setParam('change_password', null);
+        $request->setPost('password', '');
+        $request->setPost('confirmation', '');
+    }
+
+    /**
      * customer_register_success: the confirmed address has been used.
      *
      * @param Varien_Event_Observer $observer

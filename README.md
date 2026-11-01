@@ -81,6 +81,10 @@ they keep the theme's look and fields:
   password (a random one is filled in). A Cloudflare Turnstile token in the form is refreshed
   before submitting, since finding the code can take longer than the token lasts.
 - *Create Account Form* = popup: the earlier name-and-email popup instead.
+- **My account**: the "Change password" link, and the current-password field and password
+  change on the account edit page, are removed. The edit form asks for the current password on
+  every save; for a signed-in customer the module fills it in (a fresh random password), so
+  name and email can still be changed.
 
 ## How it works
 

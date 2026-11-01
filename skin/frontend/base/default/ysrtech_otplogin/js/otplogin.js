@@ -260,7 +260,28 @@
         if (verifyScope) { showMessage(verifyScope, false, message); }
     }
 
+    // Customers sign in with a code and never set a password: no "change password" link, and
+    // no current-password field or password change on the account edit page (the server
+    // side is in Observer::passwordlessAccountEdit).
+    function hidePasswordUi() {
+        if (!cfg.sendUrl) { return; }
+        $all('a[href*="changepass"]').forEach(function (a) {
+            var item = a.closest('li') && !a.closest('li').querySelector('a:not([href*="changepass"])') ? a.closest('li') : a;
+            item.parentNode.removeChild(item);
+        });
+        $all('form[action*="customer/account/editPost"]').forEach(function (form) {
+            removeField(form.querySelector('input[name="current_password"]'));
+            var box = form.querySelector('input[name="change_password"]');
+            if (box) { box.checked = false; removeField(box); }
+            var pass = form.querySelector('input[name="password"]');
+            var fieldset = pass && (pass.closest('.fieldset') || pass.closest('fieldset'));
+            if (fieldset) { fieldset.parentNode.removeChild(fieldset); }
+            else { removeField(pass); removeField(form.querySelector('input[name="confirmation"]')); }
+        });
+    }
+
     function enhancePages() {
+        hidePasswordUi();
         if (!modalById('ysrtech-otp-verify') || !cfg.sendUrl) { return; }
         var t = cfg.text || {};
 

@@ -10,7 +10,7 @@
 <config>
     <modules>
         <YSRTech_OtpLogin>
-            <version>1.2.0</version>
+            <version>1.2.1</version>
         </YSRTech_OtpLogin>
     </modules>
 
@@ -83,6 +83,15 @@
                     </ysrtech_otplogin_guard_registration>
                 </observers>
             </controller_action_predispatch_customer_account_createpost>
+            <!-- Account edit: no password to confirm. -->
+            <controller_action_predispatch_customer_account_editpost>
+                <observers>
+                    <ysrtech_otplogin_passwordless_edit>
+                        <class>ysrtech_otplogin/observer</class>
+                        <method>passwordlessAccountEdit</method>
+                    </ysrtech_otplogin_passwordless_edit>
+                </observers>
+            </controller_action_predispatch_customer_account_editpost>
             <customer_register_success>
                 <observers>
                     <ysrtech_otplogin_forget_verified_email>
