@@ -58,3 +58,8 @@
 "Create Account Form","Formulaire de création de compte"
 "The store's own Create Account page","La page Créer un compte de la boutique"
 "Popup (name and email only)","Fenêtre (nom et e-mail uniquement)"
+"Numeric","Numérique"
+"Alphabetic","Alphabétique"
+"Alphanumeric","Alphanumérique"
+"Google did not return an access token.","Google n'a pas renvoyé de jeton d'accès."
+"Google did not return profile information.","Google n'a pas renvoyé les informations du profil."
