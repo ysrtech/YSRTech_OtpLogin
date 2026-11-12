@@ -245,3 +245,10 @@ body.ysrtech-otp-open {
 .ysrtech-otp-actions { justify-content: center; }
 .ysrtech-otp-actions .button { border-radius: 4px; }
 .ysrtech-otp-close:hover { background: none; }
+
+/* TM FireCheckout: customers sign in with a code, so the password boxes shown when an account is
+   created at checkout are not for anybody to fill in (otplogin.js keeps them filled). */
+.ysrtech-otp-firecheckout #register-customer-password,
+.ysrtech-otp-firecheckout .field-confirm-password { display: none !important; }
+/* Above FireCheckout's own windows: the code is asked for on top of its sign-in window */
+.ysrtech-otp-modal { z-index: 2147483000; }

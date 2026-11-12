@@ -10,7 +10,7 @@
 <config>
     <modules>
         <YSRTech_OtpLogin>
-            <version>1.2.1</version>
+            <version>1.3.0</version>
         </YSRTech_OtpLogin>
     </modules>
 
@@ -109,6 +109,31 @@
                     </ysrtech_otplogin_require_login>
                 </observers>
             </controller_action_predispatch_onestepcheckout_index_index>
+            <!--
+                The same for TM FireCheckout: the page itself, and the request
+                that places the order. Also where an account made at checkout
+                is given a password nobody has to choose.
+            -->
+            <controller_action_predispatch_firecheckout_index_index>
+                <observers>
+                    <ysrtech_otplogin_require_login>
+                        <class>ysrtech_otplogin/observer</class>
+                        <method>requireLoginAtFirecheckout</method>
+                    </ysrtech_otplogin_require_login>
+                </observers>
+            </controller_action_predispatch_firecheckout_index_index>
+            <controller_action_predispatch_firecheckout_index_saveOrder>
+                <observers>
+                    <ysrtech_otplogin_require_login>
+                        <class>ysrtech_otplogin/observer</class>
+                        <method>requireLoginAtFirecheckout</method>
+                    </ysrtech_otplogin_require_login>
+                    <ysrtech_otplogin_passwordless_account>
+                        <class>ysrtech_otplogin/observer</class>
+                        <method>passwordlessCheckoutAccount</method>
+                    </ysrtech_otplogin_passwordless_account>
+                </observers>
+            </controller_action_predispatch_firecheckout_index_saveOrder>
         </events>
 
         <layout>

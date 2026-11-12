@@ -50,6 +50,84 @@ class YSRTech_OtpLogin_Model_Observer
     }
 
     /**
+     * "Require Sign-in at Checkout", for TM FireCheckout.
+     *
+     * Two requests are guarded. Opening the checkout as a guest leads to the
+     * store's sign-in page, which emails a code and comes straight back.
+     * Placing the order is an AJAX request that expects JSON, so a guest who
+     * posts it directly is answered in FireCheckout's own error format.
+     *
+     * Does nothing unless the setting is on.
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function requireLoginAtFirecheckout(Varien_Event_Observer $observer)
+    {
+        $helper = Mage::helper('ysrtech_otplogin');
+        if (!$helper->isLoginRequiredAtCheckout() || Mage::getSingleton('customer/session')->isLoggedIn()) {
+            return;
+        }
+
+        /** @var Mage_Core_Controller_Front_Action $action */
+        $action  = $observer->getControllerAction();
+        $request = $action->getRequest();
+        $message = $helper->__('Please sign in to complete your order.');
+
+        $action->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_DISPATCH, true);
+
+        if (strtolower((string) $request->getActionName()) === 'saveorder') {
+            $action->getResponse()
+                ->setHeader('Content-Type', 'application/json', true)
+                ->setBody(Mage::helper('core')->jsonEncode(array(
+                    'success'        => false,
+                    'error'          => true,
+                    'error_messages' => $message,
+                )));
+
+            return;
+        }
+
+        // Back to the checkout once signed in: the sign-in page reads this
+        $checkout = Mage::getUrl('firecheckout', array('_secure' => true));
+        Mage::getSingleton('customer/session')->setBeforeAuthUrl($checkout)->addNotice($message);
+        $action->getResponse()->setRedirect(Mage::getUrl('customer/account/login', array(
+            '_secure' => true,
+            'referer' => Mage::helper('core')->urlEncode($checkout),
+        )));
+    }
+
+    /**
+     * An account made while checking out with FireCheckout ("create an
+     * account for later use") is given a random password.
+     *
+     * Customers sign in with a code and never set a password, so the two
+     * password boxes are hidden on the page; FireCheckout still insists on
+     * one. The page fills them in, and this fills them in again here, so the
+     * order does not depend on a script having run.
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function passwordlessCheckoutAccount(Varien_Event_Observer $observer)
+    {
+        if (!Mage::helper('ysrtech_otplogin')->isEnabled() || Mage::getSingleton('customer/session')->isLoggedIn()) {
+            return;
+        }
+
+        $request = $observer->getControllerAction()->getRequest();
+        $billing = $request->getPost('billing');
+
+        if (!is_array($billing) || empty($billing['register_account'])) {
+            return;
+        }
+
+        $password = Mage::helper('core')->getRandomString(24);
+
+        $billing['customer_password'] = $password;
+        $billing['confirm_password']  = $password;
+        $request->setPost('billing', $billing);
+    }
+
+    /**
      * controller_action_predispatch_customer_account_createpost
      *
      * With accounts created on the store's own Create Account page, an account is only

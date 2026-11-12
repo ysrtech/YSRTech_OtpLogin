@@ -280,6 +280,54 @@
         });
     }
 
+    // TM FireCheckout: its own sign-in window, and the password boxes it shows when an account
+    // is created while checking out.
+    function enhanceFirecheckout(t) {
+        // "Already registered? Sign in": a code instead of a password. FireCheckout posts this
+        // form itself; submitting is stopped before its handler runs, and once the code is
+        // accepted the checkout is loaded again, now signed in, with the cart as it was.
+        $all('#firecheckout-login-form, form[action*="firecheckout/index/login"]').forEach(function (form) {
+            removeField(form.querySelector('input[type="password"]'));
+            $all('a[href*="forgotpassword"], .link-forgot-password', form).forEach(function (a) { a.parentNode.removeChild(a); });
+            setButtonText(form, t.sendCode);
+            interceptSubmit(form, function () {
+                var email = form.querySelector('input[name="login[username]"], input[type="email"]');
+                return { email: email ? email.value.trim() : '' };
+            }, function (res) {
+                setVerifyMode('login');
+                verifyState.after = function () { window.location.reload(); };
+                showVerify(res.message);
+            });
+        });
+
+        // "Create an account for later use": nobody chooses a password. The boxes are hidden
+        // (otplogin.css) and kept filled with a random one so FireCheckout's own checks pass;
+        // the server replaces it with its own (Observer::passwordlessCheckoutAccount).
+        if (!document.getElementById('register-customer-password') && !document.getElementById('billing:customer_password')) { return; }
+        document.body.classList.add('ysrtech-otp-firecheckout');
+
+        var secret = '';
+        try {
+            var bytes = new Uint8Array(18);
+            window.crypto.getRandomValues(bytes);
+            secret = 'Aa1' + Array.prototype.map.call(bytes, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+        } catch (e) {
+            secret = 'Aa1' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        }
+
+        // FireCheckout redraws the billing step as the address changes, which brings back empty
+        // boxes: fill them again whenever anything on the page is clicked or changed, which is
+        // always before the order can be placed.
+        var fill = function () {
+            ['billing:customer_password', 'billing:confirm_password'].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (input && input.value !== secret) { input.value = secret; }
+            });
+        };
+        fill();
+        ['click', 'change', 'focusin', 'keydown'].forEach(function (type) { document.addEventListener(type, fill, true); });
+    }
+
     function enhancePages() {
         hidePasswordUi();
         if (!modalById('ysrtech-otp-verify') || !cfg.sendUrl) { return; }
@@ -303,6 +351,8 @@
                 showVerify(res.message);
             });
         });
+
+        enhanceFirecheckout(t);
 
         // The store's Create Account page: no password; the address is confirmed with a code,
         // then the page's own form is submitted with all its fields.
@@ -338,6 +388,9 @@
         // Intercept the theme's Log In / Create Account links.
         $all('a[href]').forEach(function (a) {
             var href = a.getAttribute('href') || '';
+            // FireCheckout's "sign in" links open its own window, which asks for a code already
+            // (enhanceFirecheckout): opening the popup as well would put one on top of the other.
+            if (a.classList.contains('firecheckout-login') && modalById('firecheckout-login-window')) { return; }
             if (/customer\/account\/login(\/|$|\?)/.test(href) && modalById('ysrtech-otp-login')) {
                 a.addEventListener('click', function (e) { e.preventDefault(); open('ysrtech-otp-login'); });
             } else if (/customer\/account\/create(\/|$|\?)/.test(href) && modalById('ysrtech-otp-register')) {

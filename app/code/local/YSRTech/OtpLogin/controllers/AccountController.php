@@ -261,7 +261,11 @@ class YSRTech_OtpLogin_AccountController extends Mage_Core_Controller_Front_Acti
     public function logoutAction()
     {
         Mage::getSingleton('customer/session')->logout()->renewSession();
-        $this->_redirect('onestepcheckout', array('_secure' => true));
+        // Whichever checkout the store runs
+        $this->_redirect(
+            Mage::helper('core')->isModuleEnabled('TM_FireCheckout') ? 'firecheckout' : 'onestepcheckout',
+            array('_secure' => true)
+        );
     }
 
     /**

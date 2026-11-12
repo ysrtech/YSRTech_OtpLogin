@@ -11,7 +11,7 @@ delivered by a standard transactional email.
 
 - Sign in with an emailed OTP (no password needed).
 - Optional account creation via OTP verification.
-- Passwordless only: the standard email + password form is replaced everywhere, including OneStepCheckout.
+- Passwordless only: the standard email + password form is replaced everywhere, including OneStepCheckout and TM FireCheckout.
 - Optional "Require Sign-in at Checkout" gate for OneStepCheckout (off by default, so guest checkout keeps working).
 - Configurable OTP type (numeric / alphabetic / alphanumeric), length and expiry.
 - OTP codes are stored **hashed** (SHA-256), single-use, and tied to the email.
@@ -21,6 +21,19 @@ delivered by a standard transactional email.
   never reveal which addresses have an account.
 - Uses OpenMage's transactional email system (sender identity + template are
   configurable in the admin).
+
+## TM FireCheckout
+
+Works with TM FireCheckout as well as OneStepCheckout:
+
+- **Sign-in window in the checkout:** asks for the email only and emails a code. After the
+  code the checkout reloads, signed in, with the cart as it was.
+- **"Create an account for later use":** the two password boxes are hidden. The account is
+  created with a random password (set again on the server when the order is placed); the
+  customer signs in with a code from then on.
+- **Require Sign-in at Checkout:** a guest opening the checkout is sent to the sign-in page
+  and returned to the checkout after the code; a guest posting the order directly is refused.
+- With the module disabled, FireCheckout behaves exactly as before.
 
 ## Requirements
 
